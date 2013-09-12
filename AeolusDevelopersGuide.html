@@ -1,0 +1,2191 @@
+<!DOCTYPE html>
+<html>
+
+<style type="text/css">
+  body { font-family: Verdana, Geneva, sans-serif; }
+  h1 { font-weight: normal; font-size: 22pt; }
+  h2 { font-weight: normal; font-size: 20pt; }
+  h3 { font-weight: normal; font-size: 17pt; }
+  h4 { font-weight: normal; font-size: 14pt; }
+  h5 { font-weight: normal; font-style: italic; font-size: 12pt; }
+  table { padding: 5px; border-style: solid; border-width: 2px; border-color: #ccc; border-collapse: collapse }
+  td { padding: 5px; border-style: solid; border-width: 1px; border-color: #ccc }
+  td.constraints { border-top-width: 2px; }
+  th { padding: 5px; border-style: solid; border-width: 1px; border-color: #ccc }
+</style>
+
+<body>
+<h1><a name="doctop">The Aeolus Database Query system</a></h1>
+
+<a name="contents"> <h2>Contents</h2> </a>
+<ul>
+  <li><a href="#about">About the Aeolus framework</a></li>
+  <li><a href="#installation">Installing the Aeolus framework</a></li> 
+
+  <li><a href="#postgres">The PostgreSQL database</a>
+  <ul>
+    <li><a href="#cfgprefix">Unique names for database objects</li></a>
+
+    <li><a href="#userroles">Users and roles</a>
+    <ul>
+      <li><a href="#postgressuper">Superuser</a></li>
+      <li><a href="#projectusers">Normal users and their roles</a></li>
+      <li><a href="#supervisor">Supervisor role</a></li>
+      <li><a href="#editor">Editor role</a></li>
+      <li><a href="#viewer">Viewer role</a></li>
+    </ul>
+    </li><!-- end users and roles -->
+
+    <li><a href="#systables">System tables</a>
+    <ul>
+      <a href="#usertable"><li>'Users' table e.g. aeolus_users</li></a>
+      <li><a href="#sessionstable">'Sessions' table e.g. aeolus_sessions</a></li>
+      <li><a href="#rolestable">'Roles' table e.g. aeolus_roles</a></li>
+      <li><a href="#userrolestable">'User roles' table e.g. aeolus_user_roles</a></li>
+
+      <li><a href="#menutable">'Menu' table e.g. aeolus_menu</a>
+      <ul>
+        <li><a href="#menuworkings">How the menu works</a></li>
+        <li><a href="#menusecurity">Security of menu options</a></li>
+        <li><a href="#menurestrictions">Restrictions on access to menu options</a></li>
+        <li><a href="#breadcrumbs">Breadcrumbs display</a></li>
+        <li><a href="#menupopups">Calling a menu option as a popup window</a></li>
+        <li><a href="#menuinsert">Inserting menu options into the table</a></li>
+      </ul>
+      </li><!-- end menu table -->
+
+      <li><a href="#help">'Help pages' and 'help options' tables</a></li>
+      <li><a href="#savedqueries">'User saved queries' and 'user saved query selection' tables</a></li>
+      <li><a href="#reports">'Reports', 'report groups' and 'report outputs' tables</a></li>
+    </ul>
+    </li><!-- end system tables -->
+
+    <li><a href="#backups_etc">Backups and housekeeping</a></li>
+
+  </ul>
+  </li><!-- end postgres database -->
+
+  <li> <a href="#phpframework">The PHP framework</a>
+  <ul>
+    <li> <a href="#coreclasses">Summary of Aeolus core classes and objects</a></li>
+
+    <li><a href="#getdbqueryrunning">Getting a database query up and running</a>
+    <ul>
+      <li><a href="#components">The components file</a></li>
+      <li><a href="#addmenuforclass">Menu options for the new class</a></li>
+      <li><a href="#creatingnewclass">Defining the new class</a></li>
+      <li><a href="#overridingmethods">Overriding methods from the parent class</a>
+      <ul>
+        <li><a href="#db_search">The DB Search method</a></li>
+        <li><a href="#db_set_search_result_parms">The DB Set Search Result Parms method</a></li>
+        <li><a href="#validateparm">The Validate Parm method</a></li>
+      </ul>
+      </li><!-- end 'overriding methods' -->
+    </ul>
+    </li><!-- end 'getting a database query up and running' -->
+
+    <li><a href="#furthercust">Further customisation</a>
+    <ul>
+      <li><a href="#setlabel">Setting a column label in query and search results screens</a></li>
+      <li><a href="#suppresscols">Suppressing columns from the search screen or results</a></li>
+      <li><a href="#lookupdropdown">Creating a dropdown list from a 'lookup' table</a></li>
+      <li><a href="#popupselect">Popup windows for making selections</a></li>
+    </ul>
+    </li> <!-- end further customisation -->
+  </ul>
+  </li><!-- end php framework -->
+
+  <li><a href="#sampleapp">A sample application</a>
+    <ul>
+    <li><a href="#sampledata">Demo tables and data</a></li>
+    <li><a href="#samplephp">Demo PHP source</a>
+    <ul>
+			<li><a href="#proj_componentsphp">proj_components.php</a></li>
+			<li><a href="#contactphp">contact.php</a></li>
+			<li><a href="#postal_addressphp">postal_address.php</a></li>
+			<li><a href="#popup_postal_addressphp">popup_postal_address.php</a></li>
+    </ul>
+    </li><!-- end sample php source -->
+  </li><!-- end sample app -->
+</ul>
+
+<p><a href="#doctop">Back to top</a></p>
+
+
+<a name="about"> <h2>About the Aeolus framework</h2> </a>
+
+The Aeolus Database Query system is a framework of PHP code and PostgreSQL tables 
+and database functions, originally developed for internal use at the Bodleian Library, 
+Oxford, UK, by Sushila Burgess. The acronym 'AEOLUS' originally stood for 'Answers 
+to Enquiries from Oxford Library Users and Staff'. 
+<p>
+It is now available as open source software on <strong><a href="https://github.com/BDLSS/Aeolus">
+https://github.com/BDLSS/Aeolus</a></strong>
+</p>
+The framework provides: 
+<ul>
+ <li> a login page </li><br>
+ <li> pages to allow a supervisor to add and edit new users </li><br>
+ <li> a menu system </li><br>
+ <li> functionality to allow any database table or view to be queried, with paginated
+   results, and with the ability to email query results to oneself as a CSV attachment </li><br>
+</ul>
+<p>
+You can build on this framework in different ways: 
+</p>
+
+<ul>
+ <li> You can create your own SQL tables and then develop your own data entry forms and
+   add these to the framework to allow editing of your database. 
+ </li><br>
+
+ <li> Alternatively, you can make use of two existing open-source repositories which 
+   build on the Aeolus framework: EMLO-edit (a catalogue of 17th-century correspondence) 
+   and IMPAcT (a catalogue of 13th&ndash;16th century Islamic philosophy and theology):
+   <ul><br>
+    <li><a href="https://github.com/BDLSS/EMLO-edit" >https://github.com/BDLSS/EMLO-edit</a></li><br>
+    <li><a href="https://github.com/BDLSS/IMPAcT-edit" >https://github.com/BDLSS/IMPAcT-edit</a></li>
+   </ul>
+   <p>
+   The database creation script provided in these two repositories sets
+   up an entire suite of tables and database functions which can be used to handle 
+   literary catalogues.
+   </p>
+ </li>
+</ul>
+
+<p><a href="#doctop">Back to top</a></p>
+
+
+<a name="installation"> <h2>Installing the Aeolus framework</h2> </a>
+You need to have PostgreSQL 9 and PHP5 installed. Unfortunately we are still relying
+on some deprecated settings. In the case of PostgreSQL, you need to have 
+'standard_conforming_strings' set to 'off'. In the case of PHP, we still use Pear::DB 
+which is no longer bundled with PHP, so you may need to install it. 
+<p>Then proceed as follows:</p>
+<ol>
+<li> <strong><big>Extract everything from <a href="https://github.com/BDLSS/Aeolus">
+     https://github.com/BDLSS/Aeolus</a></big></strong></li><br>
+<li> <strong><big>Edit private_defines.php</big></strong>:
+  <ul><br>
+  <li> Change the settings of <ul> 
+        <li> <strong>CONSTANT_LIVE_DATABASE_NAME</strong> </li>
+        <li> <strong>CONSTANT_TEST_DATABASE_NAME</strong> </li>
+        <li> <strong>CONSTANT_DEV_DATABASE_NAME</strong>  </li>
+        </ul>
+  to the database names that you want to use.</li><br>
+  <li> Change the setting of <strong>DB_LOGFILE_DIR</strong> to a directory which can be written to by
+    your webserver daemon. Remember to make the path end in "/". </li><br>
+  </ul>
+</li>
+<li><strong><big>Edit aeolus.php</big></strong> (and optionally dev_aeolus.php) 
+   and set <strong>CONSTANT_SOURCEDIR</strong> to the 
+   directory where you have installed the source code. Remember to make the path end 
+   in "/".
+</li><br>
+<li><strong><big>Optionally</big></strong>, if you do not wish all your tables and usernames to begin with the 
+   prefix 'aeolus', choose a different prefix and do a global search and replace in:
+  <ul><br>
+   <li> aeolus.php (change the setting of CFG_PREFIX)</li><br>
+   <li> create_aeolus_database_framework.sql (change the string 'aeolus' throughout)</li><br>
+  </ul>
+   Similarly, if you do not wish the username of your main database administrator to 
+   end in 'a1supr', replace the string 'a1supr' in:
+  <ul><br>
+   <li> private_defines.php (change the setting of SUPERVISOR_ROLE_CODE)</li><br>
+   <li> create_aeolus_database_framework.sql (change the string 'a1supr' throughout)</li><br>
+  </ul>
+</li>
+<li><strong><big>Move aeolus.php</big></strong> (and optionally dev_aeolus.php) into your Apache document root or 
+   other directory where Apache can serve it up.
+</li><br>
+<li> <strong><big>Move all Javascript and image files</big></strong> (extensions .js, .png, .gif, 
+   .jpg) into the same directory where you put aeolus.php, i.e. into the Apache 
+   document root or similar.
+</li><br>
+<li><strong><big>Create a PostgreSQL database</big></strong>: if the database name that you defined
+   in private_defines.php does not yet exist, create an empty database with that name now, as user postgres, e.g. 
+   <p>
+   createdb -U postgres nameoflivedb
+   </p>
+</li>
+<li> <strong><big>Run create_aeolus_database_framework.sql</big></strong> as postgres against the 
+   database that you want to use:
+   <p>
+
+   psql nameoflivedb -U postgres < create_aeolus_database_framework.sql
+
+   </p>
+   <strong>(Note: if you want to set up a copy of the EMLO-edit or IMPAcT databases, 
+   run the database creation script from those repositories INSTEAD OF 
+   create_aeolus_database_framework.sql)</strong>
+</li><br>
+<li><strong><big>Log in as a supervisor:</big></strong> visit the URL corresponding to the directory 
+   where you put aeolus.php, e.g. 
+   https://example.com/aeolus.php, and log in with the following details:
+  <ul>
+   <li><big><strong>Username: aeolusa1supr</strong></big></li>
+   <li><big><strong>Password: ChangeMeNowPlease!</strong></big></li>
+  </ul>
+   (Of course, if you have changed the system prefix from 'aeolus' and the supervisor 
+   role code from 'a1supr', then the username will be formed from your new settings.)
+</li><br>
+<li> <strong><big>Change the password</big></strong> for the above user via the 'Edit your own details' option of 
+    the main menu.
+</li><br>
+<li> <strong><big>Create further users</big></strong> as desired via 'Supervisor-only options' on the main menu.
+</li><br>
+<li> <strong><big>Edit infrastructure.php</big></strong> and add your own logic for detecting cross-site scripting 
+    and for deciding if a method is 'safe', i.e. read-only and unable to change the 
+    database. <em>(This step can be postponed, but MUST NOT be omitted, particularly when 
+    your new Aeolus system goes into production.)</em>
+</li>
+</ol>
+
+Your Aeolus system is now installed and ready for development. Further background information that may be useful
+to developers follows below.
+
+<p><a href="#doctop">Back to top</a></p>
+
+<a name="postgres"><h2>The PostgreSQL database</h2></a>
+<a name="cfgprefix"><h3>Unique names for database objects</h3></a>
+
+The Aeolus system allows for two PostgreSQL databases to run on the same server: a live one and a development one.
+Within either of these databases, there may be multiple mini-databases or projects, each with its own users, 
+menu etc. 
+<p>
+Each one of the possibly multiple projects includes a standard set of about a dozen tables that store and handle
+user names and passwords, session details, menu options, a certain amount of customisation of search results 
+and, optionally, help pages. 
+A project will have its own set of these tables, each with the same columns, triggers, foreign keys etc as all the 
+other projects, but with a name that is unique within a particular database.
+</p>
+<p>
+Uniqueness of names is achieved via use of the 'system prefix', which by default in a vanilla installation 
+is 'aeolus', but which can be changed by redefining the constant 'CFG_PREFIX' in aeolus.php and by doing a
+global search and replace in the database creation script (see <a href="#installation">Installing the Aeolus
+Framework</a> above).  For example, if we had a project
+called 'The Sample Database', with system prefix 'samp', its system tables would be as follows: 
+<table>
+<tr><td>	Help options</td><td> samp_help_options         </td></tr>
+<tr><td>	Help pages</td><td> samp_help_pages             </td></tr>
+<tr><td>	Menu</td><td> samp_menu                         </td></tr>
+<tr><td>	Report groups</td><td> samp_report_groups       </td></tr>
+<tr><td>	Report outputs</td><td> samp_report_outputs     </td></tr>
+<tr><td>	Reports</td><td> samp_reports                   </td></tr>
+<tr><td>	Roles</td><td> samp_roles                       </td></tr>
+<tr><td>	Sessions</td><td> samp_sessions                 </td></tr>
+<tr><td>	User roles</td><td> samp_user_roles                  </td></tr>
+<tr><td>	User saved queries</td><td> samp_user_saved_queries  </td></tr>
+<tr><td>	User saved query selection</td><td> samp_user_saved_query_selection     </td></tr>
+<tr><td>	Users</td><td> samp_users                                               </td></tr>
+</table>
+
+
+<p><a href="#doctop">Back to top</a></p>
+
+
+<a name="userroles"><h3>Users and roles</h3></a>
+
+<h4><a name="postgressuper">Superuser</a></h4>
+The scripts provided assume that the database superuser will be called the standard name 'postgres', 
+and that all recreation of views, functions etc will be run as the 'postgres' superuser, e.g.<p>
+psql nameoflivedb -U postgres < create_my_custom_views.sql    
+</p>
+<p>
+Each project within your Aeolus system will also include at least one user with a 'supervisor' role 
+<em>within the project</em>, 
+but these project-level supervisors only have limited privileges, and should not be confused with the 
+one and only database superuser 'postgres'.
+</p>
+<p>
+<h4><a name="projectusers">Normal users and their roles</a></h4>
+Within a particular project, each username has to begin with the 'system prefix', i.e. the constant CFG_PREFIX
+which is defined in aeolus.php. 
+For example, within the Sample database, a person called Hannah might be given the username 'samphannah', 
+while within another hypothetical database, with the system prefix 'hypo',  a person called Kim might be given 
+the username 'hypokim'.
+<p>
+Within each project, three primary database roles are defined with differing levels of privilege: 
+</p><ol>
+<li><strong>Supervisor</strong> e.g. super_role_samp</li>
+<li><strong>Editor</strong> e.g. editor_role_samp</li>
+<li><strong>Viewer</strong> e.g. viewer_role_samp</li>
+</ol>
+<p>
+Each of these roles can be granted to an individual user such as 'samphannah'. 
+</p>
+<a name="supervisor"><h4>Supervisor role</h4></a>
+
+Every project has a built-in user with the supervisor role. 
+The name for this built-in user follows a standard pattern, based on the
+'system prefix' plus the constant SUPERVISOR_ROLE_CODE, which is set in private_defines.php. So, if the
+SUPERVISOR_ROLE_CODE is 'a1supr', the built-in supervisor user for the Sample database is called 'sampa1supr',
+while for the 'hypo' database, it is 'hypoa1supr'. 
+
+<p>This built-in supervisor user must never be dropped, as its existence is required 
+by certain procedures that need to be able to deduce the name of a supervisor user for a particular project. 
+However, it does not need to be the only user with the supervisor role; other users may also be granted it. 
+</p>
+<p>
+The 'supervisor' role allows a user to create and drop other users, and to reset other users' passwords, 
+when within the context of the web editing interface for the relevant project. 
+The project supervisor role is not a database superuser like the user 'postgres'. 
+It cannot issue the 'create user', 'drop user' or 'alter user' commands when running PSQL 
+from the Unix command line. 
+It can only manage other users from within its own project's web-based editing interface.
+</p>
+<p>
+If you need to reset a user's password and you cannot get into the web-based editing application
+as a project supervisor, then the alternative is to log into the Unix server and run PSQL as the user 'postgres',
+as follows:
+<p>
+psql nameoflivedb -U postgres
+</p>
+You can now reset any user's password for the web editing interface by updating the 'users' table
+and setting the 'pw' column to the required password in md5. For example, in order to reset the password for user 
+'sampsue' to 'sunshine', then issue the following command as postgres in psql:
+<p>
+update samp_users set pw = md5( 'sunshine' ) where username = 'sampsue';
+</p>
+
+
+<a name="editor"><h4>Editor role</h4></a>
+Users created via the Aeolus web-based editing application are all automatically given the 'editor' role 
+for their project, and in turn the 'editor' role entitles them to sufficient privileges on built-in
+tables, views and functions such as the menu or help system. 
+<p>
+However, when creating extra project-specific tables, views or functions yourself, 
+you need explicitly to grant the required privileges on the new object to the editor role. 
+For example, let's imagine that we want the user 'samphannah' to have full editing privileges on a new table 
+called 'samp_document'. She already has the editor role, so we just need 
+to issue the following command when creating the 'document' table:
+</p>
+<p>
+grant all on samp_document to editor_role_samp;
+</p>
+
+<a name="viewer"><h4>Viewer role</h4></a>
+The 'viewer' role is automatically granted to anyone with the 'editor' role, but it can also be 
+granted separately to people who are only to have read-only access. As in the case of the 'editor' role, 
+this role will enable access to the menu, the help system etc, but you need explicitly to grant 'select' 
+privileges on any newly-created tables, views or functions to the viewer role. For example:
+<p>
+grant select on samp_document to viewer_role_samp;
+</p>
+<p>
+One or possibly two special users, named in the constants CMS_DB_USERNAME and HELP_DB_USERNAME in defines.php,
+should be granted the 'viewer' role if you wish to have a user who connects to the database without a password 
+when a publicly accessible, read-only version of the system is deployed. Because these users can access the
+database without prior login, they should <strong>never</strong> be given the 'editor' role for any project.
+</p>
+
+
+<p><a href="#doctop">Back to top</a></p>
+
+
+<a name="systables"><h3>System tables</h3></a>
+<a name="usertable"><h4>'Users' table e.g. aeolus_users</h4></a>
+
+<table>
+<tr><th>Column name</th><th>Datatype</th><th>Default</th><th>Null</th></tr>
+    <tr><td>username</td><td>character varying(30)</td><td></td><td>NOT NULL</td></tr>
+    <tr><td>pw</td><td>text</td><td></td><td>NOT NULL</td></tr>
+    <tr><td>surname</td><td>character varying(30)</td><td>DEFAULT ''::character varying</td><td>NOT NULL</td></tr>
+    <tr><td>forename</td><td>character varying(30)</td><td>DEFAULT ''::character varying</td><td>NOT NULL</td></tr>
+    <tr><td>failed_logins</td><td>integer</td><td>DEFAULT 0</td><td>NOT NULL</td></tr>
+    <tr><td>login_time</td><td>timestamp without time zone</td><td></td><td></td></tr>
+    <tr><td>prev_login</td><td>timestamp without time zone</td><td></td><td></td></tr>
+    <tr><td>active</td><td>smallint</td><td>DEFAULT 1</td><td>NOT NULL</td></tr>
+    <tr><td>email</td><td>text</td><td></td><td></td></tr>
+
+    <tr><td colspan="4" class="constraints">
+    CONSTRAINT aeolus_users_active CHECK (((active = 0) OR (active = 1)))</td></tr>
+    <tr><td colspan="4">CONSTRAINT aeolus_users_pw CHECK ((pw > ''::text))</td></tr>
+</table>
+
+<p>
+Users are managed via the data from the project's 'users' table, e.g. samp_users,  hypo_users, etc. 
+Only the user 'postgres' can access this table directly, even in read-only mode. 
+All other users, including the project supervisor, have to use special database functions to access the details 
+from this table. These functions were created by postgres and run with postgres's privileges. 
+When execute permission is granted on these functions to a normal user, it becomes possible to retrieve 
+one's own details from the users table, and possibly the details of other users if you have the 'supervisor' role.
+</p>
+<p>
+The primary pieces of information in the table are the person's username (column 'username') and their password 
+(column 'pw'). As mentioned earlier, the password is stored in md5. 
+For example, to set the password for sampa1supr to StarL1ght:
+</p>
+<p>
+Update samp_users set pw = md5( 'StarL1ght' ) where username = 'sampa1supr';
+</p>
+<p>
+
+It is the data in the 'pw' column of the 'users' table that is checked when a login is attempted. 
+The password held in this table does not need to match the user's password as a database user, 
+i.e. as set by the 'ALTER USER' command. The password as set by 'ALTER USER' is totally irrelevant 
+to whether you will be let into the web-based editing interface or not. 
+All that matters is the 'pw' column of the 'users' table. 
+</p>
+<p>
+Users can change their password for themselves via the web-based editing interface, using the 
+'Edit your own details' option which is normally the last option on the Main Menu.
+</p>
+<p>
+
+Users can also change their own surnames, forenames and email addresses via the web-based editing interface. 
+If an email address is entered, query results can be emailed from the database directly to the user in CSV format.
+</p>
+<p>
+
+The 'users' table also contains columns for the date/time of the most recent and the previous login, 
+the number of failed login attempts and whether this is an active user or not. 
+If the user exceeds a certain number of failed login attempts, then their 'active' flag will be set to 0 
+and they will be locked out of the database. In that case, the user can be reactivated by the 'supervisor' 
+user for the project via the web-based editing interface.
+</p>
+
+<p><a href="#doctop">Back to top</a></p>
+
+
+<h4><a name="sessionstable">'Sessions' table e.g. aeolus_sessions</a></h4>
+<table>
+<tr><th>Column name</th><th>Datatype</th><th>Default</th><th>Null</th></tr>
+<tr><td>session_id</td><td>integer</td><td> DEFAULT nextval('aeolus_sessions_session_id_seq'::regclass)</td>
+<td> NOT NULL</td></tr>
+<tr><td>session_timestamp</td><td>timestamp without time zone</td><td> DEFAULT now()</td><td> NOT NULL</td></tr>
+<tr><td>session_code</td><td>text</td><td></td><td></td></tr>
+<tr><td>username</td><td> character varying(100)</td><td></td></tr>
+<tr><td colspan="4" class="constraints">
+CONSTRAINT aeolus_fk_sessions_username FOREIGN KEY (username) REFERENCES aeolus_users(username)
+</td></tr>
+</table>
+
+<p>
+Once a user has entered a correct password and successfully logged into the database, a session code is created and inserted into the 'sessions' table together with the timestamp. Each time a page is loaded after the initial login, the system checks that the correct session code can be found for this user and that the session has not timed out.
+</p>
+
+
+<p><a href="#doctop">Back to top</a></p>
+
+<h4><a name="rolestable">'Roles' table e.g. aeolus_roles</a></h4>
+<table>
+<tr><th>Column name</th><th>Datatype</th><th>Default</th><th>Null</th></tr>
+<tr><td>role_id</td><td> integer</td><td> DEFAULT nextval('aeolus_roles_role_id_seq'::regclass)</td>
+<td> NOT NULL</td></tr>
+<tr><td>role_code</td><td> character varying(20)</td><td> DEFAULT ''::character varying</td><td> NOT NULL</td></tr>
+<tr><td>role_name</td><td> text</td><td> DEFAULT ''::text</td><td> NOT NULL</td></tr>
+</table>
+<p>
+This table holds a list of the roles that may be granted to a particular user within a particular project. 
+It overlaps slightly with the three primary roles of supervisor, editor and viewer described above, 
+as it comes pre-populated with a code for 'Supervisor' so that the 'supervisor' role can be granted to other users 
+as well as the built-in project supervisor. This is the only pre-defined role. 
+Other roles need to be manually added depending on the needs of the particular project. Particular menu options 
+can be restricted to particular roles by setting restrictions in the 'menu' table (see below).
+</p>
+
+<p><a href="#doctop">Back to top</a></p>
+
+
+<h4><a name="userrolestable">'User roles' table e.g. aeolus_user_roles</a></h4>
+<table>
+<tr><th>Column name</th><th>Datatype</th><th>Default</th><th>Null</th></tr>
+<tr><td>username </td><td> character varying(30) </td><td> </td><td> NOT NULL</td></tr>
+<tr><td>role_id </td><td> integer </td><td> </td><td> NOT NULL</td></tr>
+<tr><td colspan="4" class="constraints">
+CONSTRAINT aeolus_fk_user_roles_role_id FOREIGN KEY (role_id) REFERENCES aeolus_roles(role_id)
+</td></tr>
+<tr><td colspan="4" class="constraints">
+CONSTRAINT aeolus_fk_user_roles_username FOREIGN KEY (username) REFERENCES aeolus_users(username)
+</td></tr>
+</table>
+
+<p>
+This table links a username to one or more roles. It is set up in the Edit User screen within the web-based 
+editing interface by the project supervisor. A series of checkboxes, one for each possible role, appear within 
+the Edit User screen and can be ticked by the supervisor, granting the role to the user. 
+These checkboxes are invisible to anyone who does not have the supervisor role.
+</p>
+
+<p><a href="#doctop">Back to top</a></p>
+
+
+<h4><a name="menutable">'Menu' table e.g. aeolus_menu</a></h4>
+<table>
+<tr><th>Column name</th><th>Datatype</th><th>Default</th><th>Null</th></tr>
+<tr><td>menu_item_id</td><td>  integer</td><td>  DEFAULT nextval('aeolus_menu_item_id_seq'::regclass)</td><td>  NOT NULL</td></tr>
+<tr><td>menu_item_name</td><td>  text</td><td> </td><td>  NOT NULL</td></tr>
+<tr><td>menu_order</td><td>  integer</td><td>  DEFAULT nextval('aeolus_menu_order_seq'::regclass)</td><td> </td></tr>
+<tr><td>parent_id</td><td>  integer</td><td> </td><td> </td></tr>
+<tr><td>has_children</td><td>  integer</td><td>  DEFAULT 0</td><td>  NOT NULL</td></tr>
+<tr><td>class_name</td><td>  character varying(100)</td><td> </td><td> </td></tr>
+<tr><td>method_name</td><td>  character varying(100)</td><td> </td><td> </td></tr>
+<tr><td>user_restriction</td><td>  character varying(30)</td><td>  DEFAULT ''::character varying</td><td>  NOT NULL</td></tr>
+<tr><td>hidden_parent</td><td>  integer</td><td> </td><td> </td></tr>
+<tr><td>called_as_popup</td><td>  integer</td><td>  DEFAULT 0</td><td>  NOT NULL</td></tr>
+<tr><td>collection</td><td>  character varying(20)</td><td>  DEFAULT ''::character varying</td><td>  NOT NULL</td></tr>
+
+<tr><td colspan="4" class="constraints">
+CONSTRAINT aeolus_chk_item_is_submenu_or_form CHECK (((((has_children = 0) AND (class_name IS NOT NULL)) 
+AND (method_name IS NOT NULL)) OR (((has_children = 1) AND (class_name IS NULL)) AND (method_name IS NULL))))
+</td></tr>
+<tr><td colspan="4">
+CONSTRAINT aeolus_chk_menu_item_called_as_popup CHECK (((called_as_popup = 0) OR (called_as_popup = 1)))
+</td></tr>
+
+<tr><td colspan="4" class="constraints">
+CONSTRAINT aeolus_fk_tracking_menu_parent_id FOREIGN KEY (parent_id) REFERENCES aeolus_menu(menu_item_id)
+</td></tr>
+</table>
+
+<p><a href="#doctop">Back to top</a></p>
+
+
+<h5><a name="menuworkings">How the menu works</a></h5>
+Every page that is to be deployed within the web-based editing interface has to have an entry in the 'menu' table.
+Each option has a unique numeric ID and a title.
+The ID number is added as a query parameter to the series of links that form a menu page,
+identifying which option to go to next if the user clicks on that link.
+The menu option title is displayed in the banner of the web page as it loads.
+There is also a 'menu order' numeric column, which sorts the entries of the menu into the correct order.
+
+<p>
+</p>
+Each menu option may or may not be visible on a list of menu options such as the Main Menu.
+The visibility of a menu option depends on the setting of the column 'parent_id' within the menu table. 
+<p>
+
+If the parent ID is set to -1 (or any other number less than zero),
+then the option will not be visible upon any menu. 
+</p>
+<p>
+
+If the parent ID is blank (null) or zero, then the option will be visible on the Main Menu.
+For most Aeolus systems, the Main Menu is the first thing that the user sees when they log in.
+</p>
+<p>
+
+If the parent ID is greater than zero, then the menu option will become visible
+when the user selects that parent option from an earlier menu.
+Let's say we are in the Main Menu and we notice an option called 'Other searches menu'.
+Let's say that the ID number for the 'Other searches menu' is 120.
+We click on 'Other searches menu' and the page starts to load.
+The system is now looking for menu options where the parent ID is 120.
+Let's say that the options 'Search by shelfmark', 'Search by repository' and 'Search by city'
+all have a parent ID of 120.
+We will now be presented with a sub-menu offering us the options 'Search by shelfmark', 'Search by repository'
+and 'Search by city'.
+</p>
+<p>
+
+Any menu option can lead into another menu, as seen just above, where an option in the Main Menu led into
+a second menu: in this example, the 'Other searches menu'.
+</p>
+<p>
+
+Alternatively, a menu option can lead directly into a data entry form or a search form.
+For example, if you pick the option 'Edit your own details' from the Main Menu, you do not go into a second menu;
+you go into a form allowing you to change your name and email address on the system.
+This difference in behaviour &mdash; sub-menu vs. form &mdash; is controlled by the setting of the column
+'has_children' in the menu table. If 'has children' is set to 1, the system knows that it should display
+a menu listing the children of this particular parent (unless the parent has only one child,
+in which case the system will go straight into that single option).
+However, if 'has children' is set to 0, the system knows it should go directly into a data-entry form.
+</p>
+<p>
+If a menu option takes you straight into a particular data-entry form,
+how should it know which form to put you into? This is done by the columns 'class_name' and 'method_name'
+of the 'menu' table. Class name gives the name of a particular class of PHP object.
+Method name gives the name of a method within that class.
+An object of the appropriate type will be initialised by the system and the requested method will be run.
+</p>
+
+<p><a href="#doctop">Back to top</a></p>
+
+<h5><a name="menusecurity">Security of menu options</a></h5>
+This basic structure has a few more ramifications. One is to do with security.
+In order to reduce the risk of being hacked into, it is important that no page called via GET
+should ever be capable of making any changes to the database.
+Only pages called via POST can be allowed by make changes.
+To make it easier to enforce this principle, the system passes menu item IDs via GET,
+but passes class and method names via POST.
+In most cases it will reject any GET parameters consisting of class and method name
+and the system will 'die' on the spot.
+<p>
+
+The reasoning behind this is as follows. 
+The Main Menu and sub-menus below it display a series of links of the following pattern:
+</p>
+<p>
+http://example.com/aeolus.php?menu_item_id=123
+</p>
+<p>
+No other parameters are passed in apart from menu item ID and a session ID
+to identify the user as being correctly logged in.
+There is nothing to tell you that you should perform a particular action or update a particular item of data.
+If you go into an option being called in this way, you are essentially going into an empty screen.
+You will need to enter some details and click Save (in a form that will then be submitted via POST)
+before you can actually make any changes.
+Therefore a page that is called up via menu item ID and nothing else is basically a safe page
+because you have come straight from a menu and not from an earlier form.
+</p>
+<p>
+
+Once the user has gone into a form, entered some details, clicked Save and submitted their form via POST,
+then the class name and method name to be run are passed to the next page,
+which may well add, change or delete data.
+Therefore a page that is called up via class name and method name is basically a riskier page. 
+</p>
+<p>
+The only pages where the system will allow class name and method name to be passed in via GET are search results
+pages, where the user cannot make any changes until they have clicked an 'Edit' button.
+The system recognises that a particular method is a search results method using 'is_search_results_method()'
+from the PHP 'Infrastructure' class <em>(N.B. you must customise this method for yourself)</em>.
+</p>
+
+
+<p><a href="#doctop">Back to top</a></p>
+
+<h5><a name="menurestrictions">Restrictions on access to menu options</a></h5>
+In addition to general security measures designed to protect against hackers,
+the menu table can also enforce restrictions on who can see what.
+This is done by setting up values in the 'user_restriction' column of the 'menu' table.
+Any option where the 'user restriction' is blank can be seen on the menu and invoked by any logged-in user.
+However, if a value is entered in the 'user restriction' column, the option will only be visible to users who have been granted the role whose code matches that value.
+For example, let's say there is a role with the title 'Acquisition' and the code 'acq'.
+If we create a menu option and set its user restriction to 'acq',
+then only users with the Acquisition role will be able to see that option on the menu or call it up in any way.
+
+<h5><a name="breadcrumbs">Breadcrumbs display</a></h5>
+The column 'hidden parent' is used for menu options that have a parent ID of -1, 
+in other words options that are not visibly displayed on any menu.
+However, even if invisible, their position within the menu structure does need to be stored
+so that a 'breadcrumbs' trail can be displayed across the top of the editing interface web page.
+The 'hidden parent' column should therefore be populated with the ID number of any submenu
+under which this option is to be found.
+(If the option belongs to the Main Menu, there is no need to set the 'hidden parent' column,
+as all options with a blank parent are considered to belong on the Main Menu.) 
+
+<p><a href="#doctop">Back to top</a></p>
+
+
+
+<h5><a name="menupopups">Calling a menu option as a popup window</a></h5>
+The 'called as popup' column should be set to 1 if the option in question is to be called as a popup window.
+The Aeolus system uses popup windows so that the user can select a value in many situations where a dropdown list 
+would seem to be required, but in fact the list of options is too long to fit comfortably into a dropdown list.
+
+<h5><a name="menuinsert">Inserting menu options into the table</a></h5>
+The script create_aeolus_database_framework.sql inserts a few minimal menu options. These can be used as a 
+template for a script to insert your own customised menu. Or for an example of a more fully populated menu
+with options of various different types, look at the database creation script 'create_emlo_all.sql' in
+the repository <a href="https://github.com/BDLSS/EMLO-edit" >https://github.com/BDLSS/EMLO-edit</a>, and
+search for the string 'INSERT INTO emlo_menu'.
+
+<p><a href="#doctop">Back to top</a></p>
+
+
+<h4><a name="help">'Help pages' and 'help options' tables</a></h4>
+<h5>aeolus_help_pages</h5>
+<table>
+<tr><th>Column name</th><th>Datatype</th><th>Default</th><th>Null</th></tr>
+<tr><td>page_id </td><td> integer </td><td> DEFAULT nextval('aeolus_help_pages_page_id_seq'::regclass) </td><td> NOT NULL</td></tr>
+<tr><td>page_title </td><td> character varying(500) </td><td> </td><td> NOT NULL</td></tr>
+<tr><td>custom_url </td><td> character varying(500) </td><td> </td><td></td></tr>
+<tr><td>published_text </td><td> text </td><td> DEFAULT 'Sorry, no help currently available.'::text </td><td> NOT NULL</td></tr>
+<tr><td>draft_text </td><td> text </td><td> </td><td>
+</table>
+
+<h5>aeolus_help_options</h5>
+<table>
+<tr><th>Column name</th><th>Datatype</th><th>Default</th><th>Null</th></tr>
+<tr><td>option_id </td><td> integer </td><td> DEFAULT nextval('aeolus_help_options_option_id_seq'::regclass) </td><td> NOT NULL</td></tr>
+<tr><td>menu_item_id </td><td> integer </td><td> </td><td></td></tr>
+<tr><td>button_name </td><td> character varying(100) </td><td> DEFAULT ''::character varying </td><td> NOT NULL</td></tr>
+<tr><td>help_page_id </td><td> integer </td><td> </td><td> NOT NULL</td></tr>
+<tr><td>order_in_manual </td><td> integer </td><td> DEFAULT 0 </td><td> NOT NULL</td></tr>
+<tr><td>menu_depth </td><td> integer </td><td> DEFAULT 0 </td><td> NOT NULL</td></tr>
+<tr><td colspan="4" class="constraints">
+CONSTRAINT aeolus_fk_help_option_menu_item FOREIGN KEY (menu_item_id) REFERENCES aeolus_menu(menu_item_id)
+</td></tr>
+<tr><td colspan="4" class="constraints">
+CONSTRAINT aeolus_fk_help_option_page FOREIGN KEY (help_page_id) REFERENCES aeolus_help_pages(page_id)
+</td></tr>
+</table>
+
+<p>
+A structure is in place to allow a help page to be displayed for each menu option.
+The 'help options' table connects a menu option ID to a help page ID.
+The framework of help options and empty help pages has to be set up by hand; 
+there are no data entry screens or automatic scripts to set up the help at the moment.
+However, once a help option is in place for any particular menu option, 
+a link to the relevant help page will appear in the Aeolus page banner.
+Normal users can merely view the help page, but users with the 'supervisor' role can actually edit it
+via an 'Edit help' button that appears only for supervisors. 
+</p>
+
+<p><a href="#doctop">Back to top</a></p>
+
+
+<h4><a name="savedqueries">'User saved queries' and 'user saved query selection' tables</a></h4>
+<h5>aeolus_user_saved_queries</h5>
+<table>
+<tr><th>Column name</th><th>Datatype</th><th>Default</th><th>Null</th></tr>
+<tr><td>query_id </td><td>  integer </td><td>  DEFAULT nextval('aeolus_user_saved_queries_id_seq'::regclass) </td><td>  NOT NULL</td></tr>
+<tr><td>username </td><td>  character varying(30) </td><td>  DEFAULT "current_user"() </td><td>  NOT NULL</td></tr>
+<tr><td>query_class </td><td>  character varying(100) </td><td>  </td><td>  NOT NULL</td></tr>
+<tr><td>query_method </td><td>  character varying(100) </td><td>  </td><td>  NOT NULL</td></tr>
+<tr><td>query_title </td><td>  text </td><td>  DEFAULT ''::text </td><td>  NOT NULL</td></tr>
+<tr><td>query_order_by </td><td>  character varying(100) </td><td>  DEFAULT ''::character varying </td><td>  NOT NULL</td></tr>
+<tr><td>query_sort_descending </td><td>  smallint </td><td>  DEFAULT 0 </td><td>  NOT NULL</td></tr>
+<tr><td>query_entries_per_page </td><td>  smallint </td><td>  DEFAULT 20 </td><td>  NOT NULL</td></tr>
+<tr><td>query_record_layout </td><td>  character varying(12) </td><td>  DEFAULT 'across_page'::character varying </td><td>  NOT NULL</td></tr>
+<tr><td>query_menu_item_name </td><td>  text </td><td>  </td><td> </td></tr>
+<tr><td>creation_timestamp </td><td>  timestamp without time zone </td><td>  DEFAULT now() </td><td> </td></tr>
+<tr><td colspan="4" class="constraints">
+CONSTRAINT aeolus_fk_user_saved_queries_username FOREIGN KEY (username) REFERENCES aeolus_users(username)
+</td></tr>
+</table>
+
+<h5>aeolus_user_saved_query_selection</h5>
+<table>
+<tr><th>Column name</th><th>Datatype</th><th>Default</th><th>Null</th></tr>
+<tr><td>selection_id </td><td>  integer  </td><td> DEFAULT nextval('aeolus_user_saved_query_selection_id_seq'::regclass) </td><td>  NOT NULL</td></tr>
+<tr><td>query_id </td><td>  integer </td><td>  </td><td>  NOT NULL</td></tr>
+<tr><td>column_name </td><td>  character varying(100) </td><td>  </td><td>  NOT NULL</td></tr>
+<tr><td>column_value </td><td>  character varying(500) </td><td>  </td><td>  NOT NULL</td></tr>
+<tr><td>op_name </td><td>  character varying(100) </td><td>  </td><td>  NOT NULL</td></tr>
+<tr><td>op_value  </td><td>  character varying(100) </td><td> </td><td>  NOT NULL</td></tr>
+<tr><td>column_value2 </td><td>  character varying(500) </td><td>  DEFAULT ''::character varying </td><td>  NOT NULL</td></tr>
+<tr><td colspan="4" class="constraints">
+CONSTRAINT aeolus_fk_user_saved_query_selection_query_id FOREIGN KEY (query_id) REFERENCES aeolus_user_saved_queries(query_id)
+</td></tr>
+</table>
+
+<p>
+A built-in feature of every Aeolus search screen is that logged-in users can save their selection criteria
+in a 'saved queries' table and then return to their saved queries to re-run them at a later stage. 
+</p>
+<p>
+
+The actual 'saved queries' table has a user-editable title for the query and also holds some details of how
+the results should be presented (e.g. sorted by creation date, 100 records per page, or, sorted by author name,
+20 records per page). 
+</p>
+<p>
+The 'saved query selection' table records the name of each field queried on,
+the comparison operator used and the value of the field  (e.g. 'date was before 1900',
+'number is greater than 0' or 'author name starts with S').
+</p>
+<p>
+
+Each saved query has a numeric ID. Queries saved by the user will have a 'query ID' greater than zero. 
+</p>
+<p>
+
+However, this table is also used for a second purpose by the system, i.e. to help it to remember the user's preferences as regards sorting of results, number of records per page and layout of results on the page. These preferences are stored in the 'user saved queries' table with an ID less than zero. This is the only table in the system that is likely to have negative values in its integer key field. 
+</p>
+<p>
+
+The negative ID values for user preferences are generated using the same database sequence 
+as for the positive values.
+For example, let's say that the latest value taken from the sequence currently stands at 115.
+If a user manually saves a query, their new saved query will have the ID 116.
+Then let's say that they change their general preferences.
+Their new preferences will be saved with the ID -117, i.e.
+the next sequence number but made negative.
+Then if the user manually saves yet another query, their new saved query will have the ID 118.
+</p>
+<p>
+
+Because of this dual-purpose use of the 'saved query' sequence, there is a pitfall to beware of if ever manually resetting the sequence.
+Typically we would reset a sequence by selecting max( ID number) from the table related to that sequence.
+Let's say the maximum number here is 118.
+But what if a user has just changed their preferences, and the new preferences have been saved with ID number -119?
+Next time you select a number from the sequence after resetting it, you'll get 119.
+If this number is then made negative, you will have -119 again, and will get a duplicate key error.
+So, when manually resetting this sequence, you need to select the 'min' as well as the 'max' value,
+multiply the minimum value by -1, and then see which is greatest now before choosing the number
+with which to reset the sequence.
+</p>
+
+<p><a href="#doctop">Back to top</a></p>
+
+
+<h4><a name="reports">'Reports', 'report groups' and 'report outputs' tables</a></h4>
+<h5>aeolus_reports</h5>
+<table>
+<tr><th>Column name</th><th>Datatype</th><th>Default</th><th>Null</th></tr>
+    <tr><td>report_id </td><td>  integer </td><td>  DEFAULT nextval('aeolus_reports_report_id_seq'::regclass) </td><td>  NOT NULL</td></tr>
+    <tr><td>report_title </td><td>  text </td><td>  </td><td> </td></tr>
+    <tr><td>class_name </td><td>  character varying(40) </td><td>  </td><td> </td></tr>
+    <tr><td>method_name </td><td>  character varying(40) </td><td>  </td><td> </td></tr>
+    <tr><td>report_group_id </td><td>  integer </td><td>  </td><td> </td></tr>
+    <tr><td>menu_item_id </td><td>  integer </td><td>  </td><td> </td></tr>
+    <tr><td>has_csv_option </td><td>  integer </td><td>  DEFAULT 0 </td><td>  NOT NULL</td></tr>
+    <tr><td>is_dummy_option </td><td>  integer </td><td>  DEFAULT 0 </td><td>  NOT NULL</td></tr>
+    <tr><td>report_code </td><td>  character varying(100) </td><td>  </td><td> </td></tr>
+    <tr><td>parm_list </td><td>  text </td><td>  </td><td> </td></tr>
+    <tr><td>parm_titles </td><td>  text </td><td>  </td><td> </td></tr>
+    <tr><td>prompt_for_parms </td><td>  smallint </td><td>  DEFAULT 0 </td><td>  NOT NULL</td></tr>
+    <tr><td>default_parm_values </td><td>  text </td><td>  </td><td> </td></tr>
+    <tr><td>parm_methods </td><td>  text </td><td>  </td><td> </td></tr>
+    <tr><td>report_help </td><td>  text </td><td>  </td><td> </td></tr>
+    <tr><td colspan="4" class="constraints">
+    CONSTRAINT aeolusfk_reports_menu_item_id FOREIGN KEY (menu_item_id) REFERENCES aeolus_menu(menu_item_id)
+    </td></tr>
+    <tr><td colspan="4" class="constraints">
+    CONSTRAINT aeolusfk_reports_report_group_id FOREIGN KEY (report_group_id) REFERENCES aeolus_report_groups(report_group_id)
+    </td></tr>
+</table>
+ 
+<h5>aeolus_report_groups</h5>
+<table>
+<tr><th>Column name</th><th>Datatype</th><th>Default</th><th>Null</th></tr>
+<tr><td>report_group_id </td><td>  integer </td><td>  DEFAULT nextval('aeolus_report_groups_report_group_id_seq'::regclass) </td><td>  NOT NULL</td></tr>
+<tr><td>report_group_title </td><td>  text </td><td>  </td><td> </td></tr>
+<tr><td>report_group_order </td><td>  integer </td><td>  DEFAULT 1 </td><td>  NOT NULL</td></tr>
+<tr><td>on_main_reports_menu </td><td>  integer </td><td>  DEFAULT 0 </td><td>  NOT NULL</td></tr>
+<tr><td>report_group_code </td><td>  character varying(100) </td><td>  </td><td> </td></tr>
+
+</table>
+<h5>aeolus_report_outputs</h5>
+<table>
+<tr><th>Column name</th><th>Datatype</th><th>Default</th><th>Null</th></tr>
+<tr><td> output_id </td><td>  character varying(250) </td><td>  DEFAULT ''::character varying </td><td>  NOT NULL</td></tr>
+<tr><td> line_number </td><td>  integer </td><td>  DEFAULT 0 </td><td>  NOT NULL</td></tr>
+<tr><td> line_text </td><td>  text </td><td>  </td><td> </td></tr>
+</table>
+<p>
+The 'reports' and 'report groups' tables can be used to provide a menu of pre-defined reports on different
+subjects (as opposed to users saving their own queries). It is entirely up to the developer to write the
+code for these reports if they are wanted. In practice the 'reports' and 'report groups' tables are little used.
+</p>
+<p>
+
+However the 'report outputs' table is still in active use in all projects.
+This table is used for temporary storage when a user has requested that their search results should be emailed
+to them as CSV files, but the files are going to be very large and there are doubts about whether the system
+will have enough memory.
+The report gets broken up into several sections and each section is temporarily saved in the 'report outputs'
+table until the whole report is ready.
+This just about works, though reports on queries that retrieved more than a few thousand records are still
+a bit problematic and have been known to grind to a halt and quietly die.
+</p>
+
+<p><a href="#doctop">Back to top</a></p>
+
+
+
+<h3><a name="backups_etc">Backups and housekeeping</a></h3>
+It is recommended that, in addition to any whole-server backups, a database dump should be run as an overnight 
+job by the 'postgres' user. Database tuning can also take place at the same time. (On a Unix/Linux system, this 
+could be done via the 'crontab' utility.) We suggest that the following nightly jobs should be run:
+<ol>
+<li> A 'pg_dump' job which copies out the whole live database into a zipped file as a backup, 
+     e.g. via the following operating system command:
+     <p>
+     pg_dumpall | gzip -9 > /my_directory/pg_dumpall.out.gz
+     </p>
+</li>
+<li>
+An SQL script including the following commands: 'REINDEX; VACUUM; ANALYZE;'. The aim of this is to recover
+wasted disk space and improve performance. 
+</li>
+</ol>
+<p>
+<em>
+N.B. An extra level of backup and/or audit trail is automatically provided each day as part of the infrastructure
+of the web interface. Every insert, update and delete statement run via the web interface on the live database
+is written into a script that could be re-run if necessary. This script is found 
+in the directory given by the constant DB_LOGFILE_DIR, which is set in private_defines.php.
+</em>
+</p>
+
+<h2> <a name="phpframework">The PHP framework</a></h2>
+<h3> <a name="coreclasses">Summary of Aeolus core classes and objects</a></h3>
+
+As well as providing an SQL framework, the Aeolus system also provides a large amount of general-purpose PHP code which serves as a framework for application development. 
+<p>
+Aeolus is designed to be an object-oriented system. Its core classes are:
+</p>
+<ul>
+<li>  Infrastructure</li>
+<li>	Application Entity </li>
+<li>	DB Entity </li>
+<li>	DB Query </li>
+<li>	Help </li>
+<li>	HTML </li>
+<li>	Lookup Table </li>
+<li>	Menu </li>
+<li>	Report </li>
+<li>	User </li>
+</ul>
+
+<p>
+The 'Infrastructure' class merely contains a couple of methods that need to be kept private. You will need to write your own version of these infrastructure methods. 'Application Entity' is the only direct descendent 
+of 'Infrastructure'.
+</p>
+<p>
+Then the ultimate parent to all other classes is Application Entity.
+Every other class descends from this one, and therefore has access to its methods.
+This class provides all sorts of utilities, such as methods for validating data as it is read from POST or GET 
+so as to reduce the risk of SQL injection etc.
+<br><em>Related tables: none.</em>
+</p>
+<p>
+
+Directly descended from Application Entity is DB Entity.
+This class can connect to a PostgreSQL database, run insert, update and delete statements, 
+and select data into a single variable or into an array.
+Further methods of DB Entity allow an array of search results to be presented on screen in paginated form 
+or to be emailed to the user as a CSV file.
+Most classes within any Aeolus application descend directly or indirectly from DB Entity.
+<br><em>Related tables: user saved queries, user saved query selection, report outputs.</em>
+
+</p>
+<p>
+The DB Query class represents a connection to the database.
+Every DB Entity object always has to have a DB Query object as one of its properties.
+(This comes to virtually the same thing as saying that every DB Entity has to have a database connection.)
+Most classes do not access the methods of the DB Query class directly, but instead use the methods 
+of the DB Entity object that contains the DB Query. 
+<br><em>Related tables: none.</em>
+
+</p>
+<p>
+The Help class manages help pages. 
+<br><em>Related tables: help pages, help options.</em>
+
+</p>
+<p>
+The HTML class writes out HTML tags, avoiding the necessity for hard-coding these throughout the system.
+It is generally called as a static class, e.g. html::h3_start() will output '&lt;h3&gt;'. 
+<br><em>Related tables: none</em>
+
+</p>
+<p>
+Lookup Table is a class designed to make it easy to produce drop-down lists and simple data maintenance screens 
+for tables that are used primarily for decoding ID numbers and optionally codes.
+The name of a table, its numeric key column, its title or description field, and optionally the name of  
+a short alphanumeric code column, are passed in when an instance of the class is created, and the class will then 
+know that these are the table name and column names to use when producing dropdown lists etc. 
+<br><em>Related tables: any 'lookup' table.</em>
+
+</p>
+<p>
+The Menu class outputs a list of menu options (e.g.  the Main Menu of the application) 
+and checks that any menus or forms being requested are valid menu options which the user is entitled to access.
+Whenever a menu option is called up, the 'menu' object calls the HTML class to write out 
+&lt;html&gt;, &lt;head&gt; and &lt;body&gt; tags.
+Next, the 'menu' object displays a banner at the top of the page, then either writes out a menu consisting 
+of a series of links leading to other pages, or alternatively instantiates an object of the class specified 
+for that option in the 'menu' table and gets that object to run the specified method.
+On completion of any such method, the 'menu' object writes out a little footer at the bottom of the page 
+and outputs &lt;/body&gt; and &lt;/html&gt; tags via a call to the HTML class.
+<br><em>Related tables: the 'menu' table.</em>
+
+</p>
+<p>
+The Report class handles both pre-defined reports (though these are only present in a couple of the earlier
+databases) and a user's own saved queries.
+<br><em>Related tables: user saved queries, user saved query selection, reports, report groups, report outputs.</em>
+
+</p>
+<p>
+The User class handles both the login process and the allocation of roles to a user.
+<br><em>Related tables: users, sessions, roles, user roles.</em>
+
+</p>
+<p>
+Each of these classes is defined in a single source file, named after the class, e.g. user.php.
+All these files sit in a single, main source code directory. The location of this directory is specified by the
+constant CONSTANT_SOURCEDIR, which is defined in the file aeolus.php, as described in the 
+<a href="#installation">Installation</a> section above. 
+</p>
+<p>
+Once you have installed the Aeolus code, you will be able to log into the web interface, change your password and
+personal details, perhaps set up a few more users, and log out again. Nothing terribly interesting is supplied
+by the Aeolus framework in its vanilla state. In order to add some real functionality, you will need to add
+PHP classes which can query SQL tables of your own. 
+</p>
+
+
+<p><a href="#doctop">Back to top</a></p>
+
+
+<h3><a name="getdbqueryrunning">Getting a database query up and running</a></h3>
+
+One of the first things you are likely to want to do in your new application is to create pages 
+that allow you to enter a query on one of your own project-specific tables or views, and then display the results.
+In order to do this, you will need to create your own PHP class descended from the 'common' class DB Entity.
+<p>
+
+Your new class is probably likely to be closely related to a database table or view, which you should create
+beforehand.
+As an example, I have created a table called demo_contact_details and corresponding view called 
+demo_contact_details_view, giving the name, telephone number 
+and other contact details of my colleagues.
+Since my new class is going to be all about contact details, I shall call it Contact and will put the source code 
+into a file called contact.php.
+<p>
+</p>
+
+<h4><a name="components">The components file</a></h4>
+
+In order to add a new PHP class to the Aeolus system, you need to tell the system that the new class exists and 
+where to find the source code. This can be done by including the source file at startup time.
+<p>
+It can be convenient to do this as a two-stage process: first telling the script that launches the application
+(aeolus.php) to include a single file that will list the components of your project; then, within that 
+'components' file, issuing the command 'require_once' for each source file in your project.
+</p>
+<p>
+If you look at aeolus.php, you will see the following lines:
+</p>
+<p>
+$include_file = CONSTANT_SOURCEDIR . 'common_components.php';<br>
+require_once "$include_file";
+</p>
+<p>
+I suggest that you should add a couple of similar lines to aeolus.php, to include your project-specific 
+components as well. In this example, I'll call my project-specific components file 'proj_components.php'.
+I'll add the following lines to aeolus.php, <em>after</em> the include of 'common_components.php':
+</p>
+<p>
+$include_file = CONSTANT_SOURCEDIR . 'proj_components.php';<br>
+require_once "$include_file";
+</p>
+<p>
+Next I'll create the file 'proj_components.php' which, seeing as I only have one source file in my project at
+the moment, will consist just of the following three lines:
+</p>
+<p>
+&lt;?php<br>
+require_once 'contact.php';<br>
+?&gt;<br>
+</p>
+<p>
+I'll place the file 'proj_components.php' in the directory given in CONSTANT_SOURCEDIR.
+</p>
+
+
+<p><a href="#doctop">Back to top</a></p>
+
+<h4><a name="addmenuforclass">Menu options for the new class</a></h4>
+You also need to set up menu options for a page where the user can enter their selection criteria 
+and a page to display their search results.
+<p>
+Create a script to insert your menu options (as described above
+in the <a href="#menuinsert">Inserting menu options into the table</a> section). 
+Add entries for two methods of the 'contact' class. 
+We will give these methods the same names as in the parent 'DB Entity' class, since we want to use a basis of
+existing functionality, i.e.
+</p>
+<ol><li> db_search </li><li> db_search_results</li></ol>
+Here are the sample 'insert' statements:
+<p>
+
+insert into aeolus_menu<br>
+( menu_item_name, parent_id, has_children, class_name, method_name )<br>
+values ( 'Search staff contact details', null, 0, 'contact', 'db_search' );<br>
+</p>
+<p>
+insert into aeolus_menu<br>
+( menu_item_name, parent_id, has_children, class_name, method_name )<br>
+values ( 'Search staff contact details', -1, 0, 'contact', 'db_search_results' );<br>
+</p>
+Note that:
+<ul>
+<li> You are inserting the 'search' method with a null parent ID,
+because you want this option to be on the Main Menu.
+</li>
+<li>However, you are inserting the 'search results' method with a parent ID of -1 because you do not want the
+results page to appear on the menu &mdash; you need the user to enter their selection first, and then 
+the 'results' page will be called directly from the 'search' page.  
+</li></ul>
+<p>
+Now run the 'insert menu' script as postgres. 
+</p>
+
+
+<p><a href="#doctop">Back to top</a></p>
+
+<h4><a name="creatingnewclass">Defining the new class</a></h4>
+
+Now it's time to edit the file containing the source for the new class (in this case, contact.php).
+I'll define a class called Contact which is descended from DB Entity, as follows:
+<pre>
+
+&lt;?php
+class Contact extends DBEntity {
+  function Contact( &amp;$db_connection ) {
+    $this->DBEntity( $db_connection );
+  }
+}
+?&gt;<br>
+
+</pre>
+<p>
+
+Note that the constructor function for this class must accept a parameter called 'db_connection' by reference 
+(i.e. the variable name is prefixed by an ampersand).
+The reason that this parameter is passed by reference is that we only want to use one database connection 
+throughout the lifetime of a page.
+We do not want to keep creating new database connections as copies of the original every time that a new object 
+is instantiated. 
+</p>
+<p>
+
+When the Contact object constructs itself as a new DB Entity, it also needs to pass its database connection 
+to the DB Entity class, as shown in the example above.
+</p>
+
+
+<p><a href="#doctop">Back to top</a></p>
+
+<h4><a name="overridingmethods">Overriding methods from the parent class</a></h4>
+There are three methods inherited from the 'DB Entity' class that the Contact class will override in order to be 
+able to query a database table and display paginated results:
+<ol>
+<li>db_search</li>
+<li>db_set_search_result_parms </li>
+<li>validate_parm</li>
+</ol>
+<h5><a name="db_search">The DB Search method</a></h5>
+The method 'db_search' already exists in the DB Entity class.
+When the DB Entity class is told which table or view is to be searched, it will write out a form with,
+by default, one input field per column of the table. This allows the user to enter selection criteria. 
+<p>
+Here we are overriding the parent method from DB Entity because, before we call the parent method, we need to set:
+</p>
+<ul>
+<li>the name of the table to be searched </li>
+<li>the name of the method that will display the search results.</li> 
+</ul>
+We will define a tiny method to set these values.
+As a minimum we have to set two properties: 'from_table' and 'results_method', as follows:
+<pre>
+
+  function set_contact_search_parms() {
+    $this->from_table = 'demo_contact_details_view';
+    $this->results_method = 'db_search_results';
+  }
+</pre>
+<p>
+
+Now we will override the DB Entity 'search' method.
+Note that we will pass the name of the table to search into the 'parent' version of the method as a parameter,
+even though it has already been set as a property.
+DB Entity does need the information to be supplied in both these ways, as follows:
+</p>
+<pre>
+
+  function db_search() {
+    $this->set_contact_search_parms();
+    parent::db_search( $this->from_table );
+  }
+</pre>
+<p>
+ 
+The above is all we need in order to generate a basic form where the user can enter their search criteria.
+There are many ways in which we can refine this basic form, which will be discussed later.
+</p>
+
+<h5><a name="db_set_search_result_parms">The DB Set Search Result Parms method</a></h5>
+A method called 'db_search_results' exists in the DB Entity class, and does not itself have to be overridden.
+This method will read the user's selection from POST, query the relevant table, and display paginated results, 
+with an option to have the results emailed to the user as a CSV file.
+<p>
+However, in order to make the Search Results method work, there is another method called 
+'db_set_search_result_parms' which <em>must</em> be overridden.
+</p>
+<p>
+Here is the code for 'db_set_search_result_parms' from contact.php:
+</p>
+<pre>
+
+  function db_set_search_result_parms() {
+    $this->from_table = 'demo_contact_details_view';
+    $this->keycol = 'contact_id';
+    $this->search_method = 'db_search';
+    $this->results_method = 'db_search_results';
+    $this->edit_method = 'edit_contact_details'; # optional
+  }<br>
+</pre>
+
+In other words, the function 'db_set_search_result_parms' needs to set the following properties:
+<ul>
+<li>from_table</li>
+<li>keycol</li>
+<li>search_method</li>
+<li>results_method</li>
+<li>and optionally, edit_method</li>
+</ul>
+<p>
+Note that, just as when overriding 'db_search', we need to set the name of the table to be queried in the property
+'$this->from_table'.
+</p>
+<p>
+We also have to set the name of the unique integer key column in the property '$this->keycol'.
+ The built-in DB Search Results method will only work on tables containing a unique numeric column.
+In practice this will generally be the primary key, but it does not necessarily have to be the primary key.
+All that matters from DB Entity's point of view is that it is an integer column 
+and that every row contains a value and that it is unique.
+The data in this column is used in dividing the search results up into pages,
+and optionally for calling up an 'Edit' form for a single record. 
+</p>
+<p>
+We also need to set the names of two methods:</p><ul>
+<li>the method that allows the user to enter selection criteria ('search_method')</li>
+<li>the method that displays the results retrieved ('results_method')</li></ul>
+This is so that the DB Entity class can write out the appropriate targets for forms etc. 
+
+It may seem a bit strange that we need to set values for these properties 
+when it seems very obvious that the methods being used are 'db_search' and 'db_search_results'.
+However, some classes might want to offer lots of alternative styles of entry form 
+and output results and will use different methods for these.
+
+<p>
+You might want, for example, to define a method called 'brief_contact_details' 
+and another method called 'full_contact_details'.
+The 'brief' version might use a view containing only a few columns 
+and the 'full' version might use one containing far more columns.
+So these two methods would set a different value for the property '$this->from_table',
+and then after doing so they could call 'db_search' or 'db_search_results'
+and get quite a different-looking result from these methods depending on whether
+the brief or full version of the view was used.
+This technique can be used, for example, to allow users with different roles
+to see different aspects of a record.
+</p>
+<p>
+
+Finally, you can set a value for the property '$this->edit_method' if you so wish.
+If you do so, the DB Entity object will write out an HTML form on each row of the search results
+with a hidden field for the class (in this case 'contact'), the method to be invoked
+(in this case 'edit_contact_details' as specified above), and the key value of the record.
+An 'Edit' button will appear in the key column for each record.
+</p>
+<p>
+
+If you do not wish the data to be editable, then simply omit the line that sets the value of '$this->edit_method',
+or set the value to NULL. Alternatively, instead of setting the value of 'edit method' as a simple string,
+you could, for example, call another method to find out whether the current user has editing privileges or not,
+and depending on whether they are entitled to edit the data, you can either set or blank out the value of
+'edit method'.
+</p>
+<p>
+
+By default, the Edit form opens in the current tab/window, '_self', but if you want it to open in a new tab/window instead, then set the property $this->edit_tab to '_blank'.
+</p>
+<p>
+
+Your editing method will need to be completely written by yourself; we don't have any built-in methods for editing.
+However, when putting your method together, you can use calls to the HTML class to write out input fields,
+checkboxes etc, and you can use the Lookup Table class as an easy way of generating drop-down lists in some cases. 
+</p>
+<p>
+
+Both for searching and editing, though, there is one more totally essential method that you need to know about: 'validate parm'.
+</p>
+
+<h5><a name="validateparm">The Validate Parm method</a></h5>
+The Aeolus system is built on the principle that it is essential to be extremely wary 
+of all data supplied by the user.
+We have to guard against the possibility that malicious users &mdash;
+particularly of pages that are accessible to the general public &mdash;
+could attempt SQL injection, cross-site scripting, and so on.
+For this reason, we will never, ever take a value directly from POST or GET and write it straight back out onto the screen without checking its validity.
+Instead of accessing POST or GET directly, we use methods belonging to Application Entity (and therefore available 
+to every child class) to read the value in a way that includes built-in validation.
+<p>
+
+Let's say that the user may have entered a value in an input field called 'surname' and submitted the form.
+We now want to read the value of surname from POST.
+</p>
+<p>
+
+We will NEVER do this:     <br>
+$myvar = $_POST[ 'surname' ];
+</p>
+<p>
+
+Instead we will ALWAYS do this:<br>
+$myvar = $this->read_post_parm( 'surname' );
+</p>
+<p>
+There are three functions available for reading from POST and similar arrays:
+</p>
+<ol>
+<li>read_post_parm( $parm_name )</li>
+<li>read_get_parm( $parm_name )</li>
+<li>read_session_parm( $parm_name ) </li>
+</ol>
+
+All these three functions work in exactly the same way.
+They take a value directly from the required array, e.g.
+POST, and they place this value into a property called 'parm_value'.
+Then these functions pass the name of the field being read into the Validate Parm function,
+which every child class overrides with its own specific version. 
+<p>
+
+The child class's Validate Parm function looks at that fieldname and checks whether it recognises the name.
+If it does not recognise the name, it passes control back to the parent version of Validate Parm,
+just in case the parent knows about this particular field.
+But if the child class does recognise the field name, it will also know what sort of value it should contain:
+perhaps an integer, or a date, or an alphanumeric value, or simply free text that does not contain scripting
+or SQL injection. 
+</p>
+<p>
+
+The value of the field is picked up from the property $this->parm_value and checked to see if it is of the correct
+type. For example, if a field is supposed to contain an integer, then Validate Parm checks that it does indeed
+contain an integer and nothing else.
+If the value is of the correct type, Validate Parm returns TRUE.
+Otherwise, it returns FALSE.
+</p>
+<p>
+
+Back in the 'read' method &mdash; the Read Post Parm method, for example &mdash;
+the return value from Validate Parm is checked.
+If it is TRUE then the Read Post Parm method returns the value of the field being read from POST,
+but otherwise the system goes into error handling mode. 
+</p>
+<p>
+
+Normally the system will not echo out the value of any dodgy data when giving an error message.
+Obviously, if the data did contain cross-site scripting etc this would be playing straight into the hacker's hands.
+However, if the 'debug' variable declared at the very start of Application Entity is set to TRUE,
+then the value will be echoed.  Developers will need to set debug on during development,
+but this must be set back to FALSE before being installed for live use.
+</p>
+<p>
+
+If you are testing your development work and you get some sort of cryptic message about 'Invalid data',
+it may well be that you have missed one or more fieldnames out of your Validate Parm method.
+Remember as well that in the search screen provided by the DB Search method,
+every single column from the relevant table or view is by default made into an input field on the form.
+Therefore your Validate Parm method will need to include an entry for every column in your table.
+Here is a shortened version of the method from contact.php as an example of the sort of thing
+you might need to include here:
+</p>
+<pre>
+
+  function validate_parm( $parm_name ) {
+    switch( $parm_name ) {
+      case 'contact_id':
+      case 'postal_address':
+        return $this->is_integer( $this->parm_value );
+      case 'surname':
+      case 'forename':
+      case 'postal_address_name':
+        return $this->is_ok_free_text( $this->parm_value );
+      default:
+        return parent::validate_parm( $parm_name );
+    }
+  }
+</pre>
+<p>
+
+There are a range of methods available from Application Entity to help you check the validity of the data
+you are reading from POST or GET:
+</p>
+<ul>
+<li>	is_integer </li>
+<li>	is_numeric </li>
+<li>	is_array_of_integers </li>
+<li>	is_comma_separated_integers </li>
+<li>	is_array_of_numbers </li>
+<li>	is_alphanumeric </li>
+<li>	is_alphanumeric_or_blank </li>
+<li>	is_alphanumeric_or_whitespace </li>
+<li>	is_comma_separated_alphanumeric </li>
+<li>	is_alphabetic </li>
+<li>	is_alphabetic_or_blank </li>
+<li>	is_md5 </li>
+<li>	is_html_id </li>
+<li>	is_array_of_html_id </li>
+<li>	is_dd_mm_yyyy </li>
+<li>	is_timestamp_query </li>
+<li>	is_postgres_timestamp </li>
+<li>	is_on_off_switch </li>
+<li>	is_email_address </li>
+</ul>
+
+The name of most of these methods should be reasonably self-explanatory.
+They all take the value to be checked as the first parameter.
+Many of them then have further parameters allowing further customisation, e.g.
+by default the 'is integer' method does not allow negative numbers, but you can pass in a parameter
+to say that negative numbers are allowed in this case. 
+<p>
+
+Some of the methods provided may not do exactly what you require in their present form.
+For example, the 'is_postgres_timestamp' method expects a value of format YYYY-MM-DD and it expects the first 
+digit of the year to be '1' or '2'.
+However, some projects may be dealing with earlier years, or years in the Islamic lunar calendar,
+so that 3-figure years have to be allowed.
+Or some projects use '9999' to indicate an unknown year,
+so that undated material can be sorted to the end of the list rather than coming at the beginning.
+In that case, you will need to override the method in your own child class.
+</p>
+<p>
+
+In addition to the above methods, the 'Infrastructure' class defines a method called
+'is_ok_free_text'. This method checks for signs of cross-site scripting being entered in a text field.
+The logic for the method has not been released as open source, as it would seem like inviting hackers
+to try and break our safeguards, handing any possible vulnerabilities to them on a plate. You need, therefore,
+to write your own version of the 'is_ok_free_text' method and add it to infrastructure.php.
+</p>
+<p>
+
+And, as well as the level of protection offered by 'validate parm', we also try to lessen the risk of our pages 
+being hacked into by using the PHP HTMLEntities function to convert angle brackets to &amp;lt; and &amp;gt; 
+and by escaping quotes in strings. See the Application Entity methods 'safe_output' and 'echo_safely'.
+</p>
+
+
+<p><a href="#doctop">Back to top</a></p>
+
+<h3><a name="furthercust">Further customisation</a></h3>
+The basic query and search result screens that have been documented so far are only just scratching the surface
+of the rather large and unwieldy system that Aeolus has grown into over the six years since I started working on it.
+Looking through the half a dozen or more systems that are currently in use, 
+it is clear that some of the earlier ones were coded in an inelegant and inexpert way.
+Sometimes I may have found better ways of doing things in the meantime, 
+but I am afraid I have never returned to the older systems to upgrade them.
+For this reason, when looking at the current live code, it will often be possible to come across various different 
+ways of achieving the same end result, with the older solutions to the problem being perhaps rather unattractive.
+Nevertheless, there is a lot of useful functionality there.
+I will try to indicate some of what is possible.
+
+<h4><a name="setlabel">Setting a column label in query and search results screens</a></h4>
+Use the method db_get_default_column_label( $column_name ) from the DB Entity object.
+This method is automatically called when the DB Entity object is writing out a search form
+or presenting search results.
+By default, underscores are turned to spaces and the first letter of the name is capitalised.
+So 'contact_id' would become 'Contact id'.
+This works quite well in a lot of cases, but perhaps in this example you wanted 'ID' not 'id'.
+The solution is to override the method for just the problematic column names,
+leaving the ones that are OK to be handled by the parent method, e.g.
+
+<pre>
+
+  function db_get_default_column_label( $column_name  ) {
+    switch( $column_name ) {
+      case 'contact_id':
+        return 'Contact ID';
+      default:
+        return parent::db_get_default_column_label( $column_name );
+    }
+  }
+</pre>
+
+
+<p><a href="#doctop">Back to top</a></p>
+
+
+<h4><a name="suppresscols">Suppressing columns from the search screen or results</a></h4>
+The situation quite often arises where a column from a table should be displayed in the table of results retrieved,
+but should not be offered as a searchable field, or vice versa.
+In order to suppress the display of a column in either the search form or in the list of results, 
+override the db_list_columns method from DB Entity.
+<p>
+
+This method is central to the whole handling of data from SQL tables.
+It picks up a list of the columns in a table from the PostgreSQL system catalogues, 
+and sets various attributes for each column, e.g. 
+</p>
+<ul>
+<li>Is it numeric? </li>
+<li>Is it a date? </li>
+<li>Is it searchable? </li>
+<li>What is its label? </li>
+<li>Does it have a piece of help text to display next to the input field where the user enters their selection?</li>
+<li>Should it have a dropdown list of possible values displayed next to it in the search screen?  </li>
+</ul>
+
+By telling it that 'searchable' is FALSE for a particular column, 
+you can prevent an input field appearing for that column in the search screen.
+<p>
+
+It is slightly more complicated to enable searching on a column but to suppress the display of that column
+in the table of results.  However, it is possible.
+</p>
+<p>
+In DB Entity, two properties are set to TRUE or FALSE at various different points:
+</p>
+<ul><li>'entering_selection_criteria' </li><li> 'reading_selection_criteria'</li></ul>
+If these two properties are both FALSE, then you know that you are now writing out the results, 
+and you can tell the system to skip this column.
+
+<p>
+Here is an example of the DB List Columns method being overridden:
+</p>
+<pre>
+
+function db_list_columns(  $table_or_view  ) { 
+  $rawcols = parent::db_list_columns( $table_or_view ); 
+  $columns = array(); 
+  foreach( $rawcols as $row ) { 
+    extract( $row, EXTR_OVERWRITE ); 
+    $skip_it = FALSE; 
+ 
+    if( ! $this->entering_selection_criteria  
+    &&  ! $this->reading_selection_criteria ) { 
+      switch( $column_name ) { 
+        case 'embarrassing': 
+          $skip_it = TRUE; 
+          break; 
+      } 
+    } 
+    if( $skip_it ) continue; 
+    $columns[] = $row; 
+  } 
+  return $columns; 
+}   
+</pre>
+
+
+<p><a href="#doctop">Back to top</a></p>
+
+<h4><a name="lookupdropdown">Creating a dropdown list from a 'lookup' table</a></h4>
+You'll often want to create a dropdown list based on the contents of a 
+little database table containing just ID and decode.
+A quick way of doing this is to use the Lookup Table class.
+Let's say we have a table in the 'hypothetical' project called 'hypo_theme' listing the possible themes of a poem.
+It has a numeric key column, 'theme_id', and a text column called 'theme_desc' 
+holding a description such as 'Love', 'War' etc.
+<p>
+We need to create a PHP object class to go with this table, and we'll call it Theme. Here is how we construct it:
+</p>
+<pre>
+
+class Theme extends Lookup_Table {
+  function Theme( &amp;$db_connection ) {
+
+    $this->Lookup_Table( $db_connection,
+                         $lookup_table_name = 'hypo_theme',
+                         $id_column_name    = 'theme_id',
+                         $desc_column_name  = 'theme_desc' );
+  }
+}
+</pre>
+<p>
+Now let's say that we've got a form where we want a dropdown list of all the possible themes.
+First we create an object of type 'Theme':
+</p>
+<pre>
+
+$theme_obj = new Theme( $this->db_connection );
+</pre>
+
+<p>
+Next we decide on the name and label for the dropdown list.
+We'll call the dropdown list 'theme_field' and its label 'Select a theme'.
+It's possible that a value has already been selected, and we have that value in a variable called 'selected_theme',
+so we will pass that variable to the method that produces the dropdown list 
+so that the relevant row can be highlighted if appropriate.
+Finally we call the Lookup Table Dropdown method as follows:
+</p>
+
+<pre>
+
+$theme_obj-> lookup_table_dropdown( $field_name = 'theme_field', 
+                                    $field_label = 'Select a theme', 
+                                    $selected_id = $selected_theme );
+
+</pre>
+<p>
+The above is all we need in order to create a dropdown list containing all the rows from the relevant table 
+and with the selected row, if any, highlighted.
+</p>
+
+<h4><a name="popupselect">Popup windows for making selections</a></h4>
+Sometimes there simply may be too many rows in a table to work well in a dropdown list.
+It is possible, as an alternative, to create popup windows that allow users to search a table (with paginated
+results as in the normal search screens) and then click a 'Select' button on the desired record, 
+bringing the value back into a field in the main form.
+<p>
+The sample code below demonstrates this functionality.
+</p>
+
+<p><a href="#doctop">Back to top</a></p>
+
+
+<h2><a name="sampleapp">A sample application</a></h2>
+
+First install the Aeolus framework as described above, setting up both the SQL database and the
+PHP code, and retaining the default values for 'system prefix' and SUPERVISOR_ROLE_CODE. 
+Make sure that everything is working to the extent of allowing you to log into the web interface.
+Then add demo data and PHP source to test out a small 'contact details' application in which
+postal addresses are selected via popup windows.
+
+<h3><a name="sampledata">Demo tables and data</a></h3>
+Run the following SQL script:<br>
+<pre>
+
+------------------------
+-- demo postal addresses
+------------------------
+create sequence demo_postal_addresses_id_seq;
+grant all on demo_postal_addresses_id_seq to super_role_aeolus;
+grant all on demo_postal_addresses_id_seq to editor_role_aeolus;
+
+create table demo_postal_addresses(
+ address_id      integer not null default nextval('demo_postal_addresses_id_seq'::regclass),
+ address_line1   character varying(200)   not null default '[please add]'::character varying,
+ address_line2   character varying(200)   not null default ''::character varying,
+ primary key( address_id )
+);
+
+grant all on demo_postal_addresses to super_role_aeolus;
+grant all on demo_postal_addresses to editor_role_aeolus;
+grant select on demo_postal_addresses to viewer_role_aeolus;
+
+insert into demo_postal_addresses(address_line1)  values('Osney One Building' );
+insert into demo_postal_addresses(address_line1)  values('Bodleian Library' );
+insert into demo_postal_addresses(address_line1)  values('Parks Road' );
+insert into demo_postal_addresses(address_line1)  values('Nuneham Park' );
+insert into demo_postal_addresses(address_line1)  values('Pusey Lane' );
+insert into demo_postal_addresses(address_line1)  values('3 Mansfield Road' );
+insert into demo_postal_addresses(address_line1)  values('Zoology Department' );
+insert into demo_postal_addresses(address_line1)  values('15 Norham Gardens' );
+insert into demo_postal_addresses(address_line1)  values('1 Wellington Square' );
+insert into demo_postal_addresses(address_line1)  values('South Parks Road' );
+insert into demo_postal_addresses(address_line1)  values('St Aldates''' );
+insert into demo_postal_addresses(address_line1)  values('45-47 Banbury Road' );
+insert into demo_postal_addresses(address_line1)  values('Plant Sciences Department' );
+insert into demo_postal_addresses(address_line1)  values('Book Storage Facility' );
+insert into demo_postal_addresses(address_line1)  values('10 Merton Street' );
+insert into demo_postal_addresses(address_line1)  values('41 St Giles''' );
+insert into demo_postal_addresses(address_line1)  values('Park End Street' );
+insert into demo_postal_addresses(address_line1)  values('1 Church Walk' );
+insert into demo_postal_addresses(address_line1)  values('1 St Johns Street' );
+insert into demo_postal_addresses(address_line1)  values('47 Wellington Square' );
+insert into demo_postal_addresses(address_line1)  values('151 Walton Street' );
+insert into demo_postal_addresses(address_line1)  values('1A South Parks Road' );
+insert into demo_postal_addresses(address_line1)  values('St Giles''' );
+insert into demo_postal_addresses(address_line1)  values('Philosophy and Theology Faculties Library' );
+insert into demo_postal_addresses(address_line1)  values('51 Banbury Road' );
+insert into demo_postal_addresses(address_line1)  values('South Parks Road' );
+insert into demo_postal_addresses(address_line1)  values('Old Road Research Building' );
+insert into demo_postal_addresses(address_line1)  values('3 Worcester Street' );
+insert into demo_postal_addresses(address_line1)  values('27 Winchester Road' );
+insert into demo_postal_addresses(address_line1)  values('34 Broad Street' );
+insert into demo_postal_addresses(address_line1)  values('St Cross Building' );
+insert into demo_postal_addresses(address_line1)  values('35 Nuffield Way' );
+insert into demo_postal_addresses(address_line1)  values('St Cross Building' );
+
+update demo_postal_addresses set address_line2 = 'Oxford';
+update demo_postal_addresses set address_line2 = 'Swindon' 
+where address_line1 = 'Book Storage Facility';
+
+------------------------
+-- demo contact details
+------------------------
+create sequence demo_contact_details_id_seq;
+grant all on demo_contact_details_id_seq to super_role_aeolus;
+grant all on demo_contact_details_id_seq to editor_role_aeolus;
+
+create table demo_contact_details(
+ contact_id integer not null default nextval('demo_contact_details_id_seq'::regclass),
+ surname    character varying(100)  not null default '[please add]'::character varying,
+ forename   character varying(100)  not null default '[please add]'::character varying,
+ postal_address integer,
+ primary key( contact_id )
+);
+
+alter table demo_contact_details
+add constraint demo_contact_details_address_fk 
+foreign key( postal_address )
+references demo_postal_addresses ( address_id );
+
+grant all on demo_contact_details to super_role_aeolus;
+grant all on demo_contact_details to editor_role_aeolus;
+grant select on demo_contact_details to viewer_role_aeolus;
+
+create view demo_contact_details_view
+as select
+cd.*, (select address_line1 || ' ' || coalesce( address_line2, '' ) from demo_postal_addresses
+       where cd.postal_address = demo_postal_addresses.address_id) as postal_address_name
+from
+demo_contact_details cd;
+
+grant select on demo_contact_details_view to super_role_aeolus;
+grant select on demo_contact_details_view to editor_role_aeolus;
+grant select on demo_contact_details_view to viewer_role_aeolus;
+
+
+insert into demo_contact_details( surname, forename, postal_address)
+values ( 'Burgess', 'Sushila', 1 );
+
+insert into demo_contact_details( surname, forename, postal_address)
+values ( 'Aardvaark', 'Angela', 7 );
+
+insert into demo_contact_details( surname, forename, postal_address)
+values ( 'Nightshade', 'Woody', 13 );
+
+insert into demo_contact_details( surname, forename, postal_address)
+values ( 'Nomad', 'Naomi', null  );
+
+------------
+-- Demo menu
+------------
+delete from aeolus_menu 
+where class_name in ('contact', 'postal_address', 'popup_postal_address' );
+
+-- Contact details search and edit
+
+ insert into aeolus_menu
+( menu_item_name, parent_id, has_children, class_name, method_name )
+values ( 'Staff contact details', null, 0, 'contact', 'db_search' );
+
+insert into aeolus_menu
+( menu_item_name, parent_id, has_children, class_name, method_name )
+values ( 'Staff contact details', -1, 0, 'contact', 'db_search_results' );
+
+insert into aeolus_menu
+( menu_item_name, parent_id, has_children, class_name, method_name )
+values ( 'Staff contact details', -1, 0, 'contact', 'edit_contact_details' );
+
+insert into aeolus_menu
+( menu_item_name, parent_id, has_children, class_name, method_name )
+values ( 'Staff contact details', -1, 0, 'contact', 'save_contact_details' );
+
+-- Normal, non-popup address search
+
+ insert into aeolus_menu
+( menu_item_name, parent_id, has_children, class_name, method_name )
+values ( 'Postal addresses', null, 0, 'postal_address', 'db_search' );
+
+insert into aeolus_menu
+( menu_item_name, parent_id, has_children, class_name, method_name )
+values ( 'Postal addresses', -1, 0, 'postal_address', 'db_search_results' );
+
+
+-- Address popup
+
+insert into aeolus_menu
+( menu_item_name, parent_id, has_children, class_name, method_name, called_as_popup )
+values ( 'Choose postal address', -1, 0, 'popup_postal_address', 'app_popup_search', 1 );
+
+insert into aeolus_menu
+( menu_item_name, parent_id, has_children, class_name, method_name, called_as_popup )
+values ( 'Choose postal address', -1, 0, 'popup_postal_address', 'app_popup_search_results', 1 );
+
+insert into aeolus_menu
+( menu_item_name, parent_id, has_children, class_name, method_name, called_as_popup )
+values ( 'Add postal address', -1, 0, 'popup_postal_address', 'app_popup_add_record', 1 );
+
+insert into aeolus_menu
+( menu_item_name, parent_id, has_children, class_name, method_name, called_as_popup )
+values ( 'Add postal address', -1, 0, 'popup_postal_address', 'create_address', 1 );
+
+</pre>
+
+
+<p><a href="#doctop">Back to top</a></p>
+
+<h3><a name="samplephp">Demo PHP source</a></h3>
+As mentioned above, you need to edit the script that launches your application &mdash; aeolus.php &mdash; and add the following lines so that the demo code will be included:
+<p>
+$include_file = CONSTANT_SOURCEDIR . 'proj_components.php';<br>
+require_once "$include_file";
+</p>
+Then add the following files to the directory specified in CONSTANT_SOURCEDIR:
+<ul>
+<li>proj_components.php</li>
+<li>contact.php</li>
+<li>postal_address.php</li>
+<li>popup_postal_address.php</li>
+</ul>
+
+<h4><a name="proj_componentsphp">proj_components.php</a></h4>
+<pre>
+&lt;?php
+require_once 'contact.php';
+require_once 'postal_address.php';
+require_once 'popup_postal_address.php';
+?&gt;
+</pre>
+
+
+<p><a href="#doctop">Back to top</a></p>
+
+<h4><a name="contactphp">contact.php</a></h4>
+<pre>
+&lt;?php
+class Contact extends DBEntity {
+  #==============================================
+  function Contact( &$db_connection ) {
+    $this->DBEntity( $db_connection );
+  }
+  #==============================================
+  function set_contact_search_parms() {
+    $this->from_table = 'demo_contact_details_view';
+    $this->results_method = 'db_search_results';
+  }
+  #==============================================
+  function db_search() {
+    $this->set_contact_search_parms();
+    parent::db_search( $this->from_table );
+  }
+  #==============================================
+  function db_set_search_result_parms() {
+    $this->from_table = 'demo_contact_details_view';
+    $this->keycol = 'contact_id';
+    $this->search_method = 'db_search';
+    $this->results_method = 'db_search_results';
+    $this->edit_method = 'edit_contact_details'; # optional
+  }
+  #==============================================
+  function db_list_columns(  $table_or_view  ) { 
+    $rawcols = parent::db_list_columns( $table_or_view ); 
+    $columns = array(); 
+    foreach( $rawcols as $row ) { 
+      extract( $row, EXTR_OVERWRITE ); 
+      $skip_it = FALSE; 
+   
+      if( $column_name == 'postal_address' )
+        $row[ 'searchable' ] = FALSE;
+
+      if( ! $this->entering_selection_criteria  
+      &&  ! $this->reading_selection_criteria ) { 
+        switch( $column_name ) { 
+          case 'postal_address': 
+            $skip_it = TRUE; 
+            break; 
+        } 
+      } 
+
+      if( $skip_it ) continue; 
+      $columns[] = $row; 
+    } 
+    return $columns; 
+  }   
+  #==============================================
+
+  function edit_contact_details() {
+
+    $this->clear(); # blank out all properties that may have been set beforehand
+
+    $contact_id = $this->read_post_parm( 'contact_id' );
+    if( ! $contact_id ) die( 'No contact ID provided' );
+
+    $statement = "select * from demo_contact_details_view where contact_id = $contact_id";
+    $this->db_select_into_properties( $statement );
+    if( ! $this->contact_id ) die( 'Invalid contact ID.' );
+
+    $form_name = html::form_start( 'contact', 'save_contact_details' );
+
+    html::hidden_field( 'contact_id', $contact_id );
+    echo 'Contact ID: ' . $contact_id;
+    echo LINEBREAK;
+    echo LINEBREAK;
+
+    html::input_field( 'forename', 'Forename', $this->forename );
+    echo LINEBREAK;
+    echo LINEBREAK;
+
+    html::input_field( 'surname', 'Surname', $this->surname );
+    echo LINEBREAK;
+    echo LINEBREAK;
+
+    html::horizontal_rule();
+    html::hidden_field( 'postal_address', $this->postal_address );
+
+    html::input_field( 'postal_address_name', $label = 'Postal address', 
+                       $value = $this->postal_address_name, 
+                       $in_table = FALSE, $size = 80, $tabindex = 1, NULL, NULL, 
+                       $input_parms = 'READONLY' );
+    echo LINEBREAK;
+    
+    $address_obj = new Popup_Postal_Address( $this->db_connection );
+
+    $address_obj->app_popup_searchform_caller( $calling_form = $form_name, 
+                                               $calling_field = 'postal_address' );
+
+    echo SPACE . SPACE;
+
+    $address_obj->app_popup_addform_caller( $calling_form = $form_name, 
+                                            $calling_field = 'postal_address' );
+    html::horizontal_rule();
+
+    html::submit_button( 'save_button', 'Save' );
+    html::submit_button( 'clear_search_button', 'Search' );
+    html::form_end();
+
+  }
+
+  #==============================================
+  function save_contact_details() {
+
+    $this->clear(); # blank out all properties that may have been set beforehand
+
+    if( $this->parm_found_in_post( 'clear_search_button' )) {
+      $this->db_search();
+      return;
+    }
+
+    $contact_id = $this->read_post_parm( 'contact_id' );
+    if( ! $contact_id ) die( 'No contact ID provided' );
+
+    $ok = TRUE;
+
+    $surname = trim( $this->read_post_parm( 'surname' ) );
+    $forename = trim( $this->read_post_parm( 'forename' ) );
+
+    $postal_address = $this->read_post_parm( 'postal_address' );
+    if( ! $postal_address ) $postal_address = 'null';
+
+    if( ! $surname ) {
+      echo 'Surname must be entered. Reverting to previous value' . LINEBREAK . LINEBREAK;
+      $ok = FALSE;
+    }
+    if( ! $forename ) {
+      echo 'Forename must be entered. Reverting to previous value' . LINEBREAK . LINEBREAK;
+      $ok = FALSE;
+    }
+
+    if ( $ok ) {
+      $statement = "update demo_contact_details set surname='" . $this->escape( $surname ) . "', "
+                 . " forename='" . $this->escape( $forename ) . "', "
+                 . " postal_address=$postal_address "
+                 . " where contact_id = $contact_id";
+      $this->db_run_query( $statement );
+    }
+
+    $this->edit_contact_details();
+  }
+  #==============================================
+  function validate_parm( $parm_name ) {
+    switch( $parm_name ) {
+      case 'contact_id':
+      case 'postal_address':
+        return $this->is_integer( $this->parm_value );
+      case 'surname':
+      case 'forename':
+      case 'postal_address_name':
+        return $this->is_ok_free_text( $this->parm_value );
+      default:
+        return parent::validate_parm( $parm_name );
+    }
+  }
+  #==============================================
+}
+?&gt;
+</pre>
+
+
+<p><a href="#doctop">Back to top</a></p>
+
+<h4><a name="postal_addressphp">postal_address.php</a></h4>
+<pre>
+&lt;?php
+class Postal_Address extends DBEntity {
+  #==============================================
+
+  function Postal_Address( &$db_connection ) {
+    $this->DBEntity( $db_connection );
+  }
+  #==============================================
+
+  function set_postal_address_search_parms() {
+    $this->from_table = 'demo_postal_addresses';
+    $this->results_method = 'db_search_results';
+  }
+  #==============================================
+  function db_search() {
+    $this->set_postal_address_search_parms();
+    parent::db_search( $this->from_table );
+  }
+  #==============================================
+
+  function db_set_search_result_parms() {
+    $this->from_table = 'demo_postal_addresses';
+    $this->keycol = 'address_id';
+    $this->search_method = 'db_search';
+    $this->results_method = 'db_search_results';
+  }
+  #==============================================
+  
+  function validate_parm( $parm_name ) {
+
+    switch( $parm_name ) {
+      case 'address_id':
+        return $this->is_integer( $this->parm_value );
+      case 'address_line1':
+      case 'address_line2':
+        return $this->is_ok_free_text( $this->parm_value );
+      default:
+        return parent::validate_parm( $parm_name );
+    }
+  }
+  #==============================================
+}
+?&gt;
+</pre>
+
+
+<p><a href="#doctop">Back to top</a></p>
+
+<h4><a name="popup_postal_addressphp">popup_postal_address.php</a></h4>
+<pre>
+&lt;?php
+class Popup_Postal_Address extends Postal_Address {
+  #==============================================
+
+  function Popup_Postal_Address( &$db_connection ) {
+    $this->Postal_Address( $db_connection );
+  }
+  #==============================================
+
+  function db_set_search_result_parms() { # override parent
+
+    parent::db_set_search_result_parms();
+
+    # Override some of the parameters
+    $this->from_table     = $this->app_popup_get_search_table();
+    $this->search_method  = $this->app_popup_get_search_method();
+    $this->results_method = $this->app_popup_get_search_results_method();
+
+    $this->write_post_parm( 'order_by', $this->app_popup_get_order_by_col() );
+  }
+  #==============================================
+
+  function app_popup_get_search_table() {  # from application entity
+
+    return 'demo_postal_addresses'; # in theory could be a different view 
+                                    # from the non-popup version
+  }
+  #==============================================
+ 
+
+  function app_popup_get_order_by_col() {  # from application entity
+
+    return 'address_line1';
+  }
+  #==============================================
+
+  function app_popup_set_result_id() {  # from application entity
+
+    if( $this->menu_method_name == 'create_address' ) # i.e. called by 'add' button
+      $this->app_popup_result_id = $this->address_id;  
+    else
+      $this->app_popup_result_id = $this->current_row_of_data[ 'address_id' ];  
+    return $this->app_popup_result_id;
+  }
+  #-----------------------------------------------------
+
+  function app_popup_set_result_text() {
+
+    if( $this->menu_method_name == 'create_address' ) # i.e. called by 'add' button
+      $this->app_popup_result_text = $this->address_line1;
+    else
+      $this->app_popup_result_text = $this->current_row_of_data[ 'address_line1' ];
+    return $this->app_popup_result_text;
+  }
+  #==============================================
+
+  function app_popup_from_query_field() {  # from application entity
+
+    # return TRUE if calling field is part of a search form. Otherwise return FALSE.
+
+    return FALSE;
+  }
+  #==============================================
+  function app_popup_get_field_for_select_button() { # from application entity
+
+    return 'address_id';
+  }
+  #==============================================
+
+  function app_popup_get_decode_fieldname() {  # from application entity
+
+    return 'postal_address_name';
+  }
+  #==============================================
+
+
+  function app_popup_get_focus_fieldname() {  # from application entity
+
+    return 'postal_address_name';
+  }
+  #==============================================
+
+  function app_popup_add_record() {
+
+    $this->form_name = html::form_start( $this->app_get_class( $this ), 'create_address' );
+
+    $this->app_popup_read_calling_form_and_field();
+    html::hidden_field( 'calling_form', $this->calling_form );
+    html::hidden_field( 'calling_field', $this->calling_field );
+
+    html::input_field( 'address_line1', 'Address line 1' );
+    echo LINEBREAK . LINEBREAK;
+    html::input_field( 'address_line2', 'Address line 2' );
+    echo LINEBREAK . LINEBREAK;
+
+    html::submit_button( 'save_button', 'Save' );
+    html::submit_button( 'cancel_button', 'Cancel', $tabindex=1, 
+                          $other_parms='onclick="self.close()"' );
+
+    html::form_end();
+  }
+  #-----------------------------------------------------
+
+  function create_address() {
+
+    $statement = "select nextval('demo_postal_addresses_id_seq'::regclass)";
+    $address_id = $this->db_select_one_value( $statement );
+
+    $address_line1 = trim( $this->read_post_parm( 'address_line1' ) );
+    $address_line2 = trim( $this->read_post_parm( 'address_line2' ) );
+
+    if( ! $address_line1 ) {
+      echo 'Address line 1 must be entered.' . LINEBREAK . LINEBREAK;
+      html::button( 'cancel_button', 'Cancel', $tabindex=1, 'onclick="self.close()"' );
+      return;
+    }
+
+    $statement = 'insert into demo_postal_addresses( address_id, address_line1, address_line2 )'
+               . " values( $address_id, '" 
+               . $this->escape( $address_line1 ) . "', '" 
+               . $this->escape( $address_line2 ) . "')";
+    $this->db_run_query( $statement );
+
+    $statement = "select * from demo_postal_addresses where address_id = $address_id";
+    $this->db_select_into_properties( $statement );
+
+    echo $this->address_line1 . ' ' . $this->address_line2;
+    html::new_paragraph();
+    html::italic_start();
+    echo 'Click OK to pass the details back into the main data entry screen.';
+    html::italic_end();
+    html::new_paragraph();
+
+    $this->calling_form = $this->read_post_parm( 'calling_form' );
+    $this->calling_field = $this->read_post_parm( 'calling_field' );
+
+    $this->app_popup_pass_value_back(); 
+    html::button( 'cancel_button', 'Cancel', $tabindex=1, 'onclick="self.close()"' );
+  }
+  #-----------------------------------------------------
+}
+?&gt;
+</pre>
+
+<p>
+Hopefully the sample code above should provide enough examples to allow you to develop 
+a useful, functioning application based on the Aeolus Database Query System.
+</p>
+
+<p><a href="#doctop">Back to top</a></p>
+
+<p>
+<em>Sushila Burgess, September 2013.</em>
+</p>
+</body>
+</html>
