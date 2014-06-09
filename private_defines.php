@@ -14,6 +14,7 @@ define( 'HELP_DB_USERNAME', 'w5view' ); # user with read-only permissions on hel
 
 define( 'SUPERVISOR_ROLE_CODE', 'a1supr' );
 define( 'SUPERVISOR_ROLE_ID',   99       );
+define( 'SUPERVISOR_INITIAL_PASSWORD', 'ChangeMeNowPlease!' ); # The password in an *EMPTY* database
 
 define( 'EDITOR_ROLE_CODE', 'b2edit' );
 define( 'VIEWER_ROLE_CODE', 'c3view' );
