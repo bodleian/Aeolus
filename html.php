@@ -1117,7 +1117,11 @@ class HTML extends Application_Entity {
       echo '>';
     }
 
-    echo '<label for="' . $field_id . '">';
+    echo '<label for="' . $field_id . '"';
+    if( ! $in_table ) { 
+      if( $label_parms ) echo ' ' . $label_parms . ' ';
+    }
+    echo '>';
     $label = trim( $label );
     echo $label;
     $last_char = substr( $label, -1 );
