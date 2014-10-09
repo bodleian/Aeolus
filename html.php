@@ -1272,7 +1272,11 @@ class HTML extends Application_Entity {
     $field_id = html::field_id_from_fieldname( $fieldname, $input_instance );
 
     if( $in_table ) echo '<td ' . $label_parms . ' >';
-    if( strlen( $label ) > 0 ) echo '<label for="' . $fieldname . '">';
+    if( strlen( $label ) > 0 ) {
+      echo '<label for="' . $fieldname . '" ';
+      if( ! $in_table ) echo $label_parms;
+      echo '>';
+    }
     $label = trim( $label );
     echo $label;
     $last_char = substr( $label, -1 );
