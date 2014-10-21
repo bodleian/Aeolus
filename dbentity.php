@@ -1651,8 +1651,12 @@ class DBEntity extends Application_Entity {
 
         $query_value = trim( $this->escape( $column_value ));
         $sql_op = $this->db_get_sql_query_op( $op );
+        $trimmed_column_name = " coalesce( lower( trim( $column_name )), '') ";
 
-        if( $op == 'contains' || $op == 'does_not_contain' )
+        if( $op == 'contains' )
+          $query_value = $this->db_search_for_words_in_any_order( $trimmed_column_name, $column_value, 
+                                                                  $case_insensitive = TRUE );
+        elseif( $op == 'does_not_contain' )
           $query_value = '%' . $query_value . '%';
         elseif( $op == 'starts_with' || $op == 'does_not_start_with' )
           $query_value = $query_value . '%';
@@ -1663,8 +1667,12 @@ class DBEntity extends Application_Entity {
         elseif( $op == 'is_not_blank' )
           $sql_op = ' != ';
 
-        $where_clause = $where_clause . " and coalesce(lower(trim( $column_name )),'') $sql_op '" 
-                      . strtolower(trim( $query_value )) . "' ";
+        $where_clause .= " and $trimmed_column_name $sql_op ";
+ 
+        if( $op == 'contains' )
+          $where_clause .= $query_value;
+        else
+          $where_clause .= "'" . strtolower( trim( $query_value )) . "' ";
       }
 
       # Keep a record of criteria entered, so you can save the query if necessary
@@ -1716,7 +1724,66 @@ class DBEntity extends Application_Entity {
 
     
     $this->reading_selection_criteria = FALSE; # finished entering selection criteria
+
     return $where_clause;
+  }
+  #-----------------------------------------------------
+
+  function db_search_for_words_in_any_order( $column_name, $orig_search_term, $case_insensitive = TRUE ) {
+
+    # Enable case-insensitive searching if required
+    if( $case_insensitive ) {
+      $orig_search_term = strtolower( $orig_search_term );
+      $column_name = " lower( $column_name ) ";
+    }
+
+    # Ignore various bits of punctuation, e.g. full stops
+    $puncs = array( ',', '.', ';', ':' );
+    foreach( $puncs as $punc ) {
+      $orig_search_term = str_replace( $punc, ' ', $orig_search_term );
+    }
+
+    # Now check if they have entered any phrases in double quotes
+    $orig_search_term = $this->strip_all_slashes( $orig_search_term );
+
+    $split_on_quotes = explode( '"', $orig_search_term );
+    $part_count = count( $split_on_quotes );
+    $search_terms = array();
+    
+    $i = 0;
+    foreach( $split_on_quotes as $part ) {
+      $i++;
+      $part = trim( $part );
+      if( ! $part ) continue;
+
+      if( $i == 1 || $i == $part_count ) { # before or after double quotes
+        $words = array();
+        $words = explode( ' ', $part );
+        foreach( $words as $word ) {
+          $word = trim( $word );
+          if( ! $word ) continue;
+
+          $word = "'%" . $this->escape( $word ) . "%'";
+          if( $case_insensitive ) # strtolower doesn't seem to work on Greek characters, maybe lower() will
+            $word = " lower( $word ) ";
+
+          $search_terms[] = $word;
+        }
+      }
+      else {
+        $part = "'%" . $this->escape( $part ) . "%'";
+        if( $case_insensitive ) # strtolower doesn't seem to work on Greek characters, maybe lower() will
+          $part = " lower( $part ) ";
+
+        $search_terms[] = $part;
+        continue;
+      }
+    }
+
+    $join_with = " and $column_name like ";
+    $new_search_term = implode( $join_with, $search_terms );
+
+    return $new_search_term;
   }
   #-----------------------------------------------------
   # In order to use this function you MUST be able to pass in the name of a unique, numeric key column
