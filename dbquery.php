@@ -71,7 +71,13 @@ class DBQuery extends Application_Entity {
   # INVALID $statement: select * from jj_barcodes where created_by = 'Jasmine O'Donnell'
   # VALID $statement  : select * from jj_barcodes where created_by = 'Jasmine O\'Donnell'
 
+  # November 2014: we want to avoid using backslashes to escape SQL statements.
+  # Convert backslash plus single quote to two single quotes, and remove any backslashes before double quotes.
+  # See new function pm_generic_escape_to_sql_escape().
+
   function db_run_query( $statement ) {
+
+    $statement = $this->pm_generic_escape_to_sql_escape( $statement );
 
     $this->pm_clear_dataset();
     $this->pm_store_statement( $statement );
@@ -137,6 +143,7 @@ class DBQuery extends Application_Entity {
     else { # Execute an insert, update or delete and return rowcount.
 
       $statement = addslashes( $statement );
+      $statement = $this->pm_generic_escape_to_sql_escape( $statement );
 
       $statement = "select dbf_exec_with_rowcount(  '$statement'  )";
 
@@ -328,6 +335,21 @@ class DBQuery extends Application_Entity {
     if( $result < strlen($statement)) die( 'Error writing logfile' );
 
     fclose( $handle );
+  }
+  #-----------------------------------------------------
+  function pm_generic_escape_to_sql_escape( $statement ) {
+
+    # November 2014: we want to avoid using backslashes to escape SQL statements.
+    # Convert backslash plus single quote to two single quotes, and remove any backslashes before double quotes.
+
+    #echo 'BEFORE: ' . $statement . LINEBREAK;
+
+    $statement = str_replace( "\\'", "''", $statement );
+    $statement = str_replace( '\\"', '"', $statement );
+
+    #echo 'AFTER: ' . $statement . LINEBREAK;
+
+    return $statement;
   }
   #-----------------------------------------------------
 }
